@@ -26,9 +26,10 @@ Open the URL printed by Vite. For browser validation, install Playwright's brows
 npx playwright install --with-deps chromium webkit
 npm run test:browser
 node scripts/check-export.mjs
+node scripts/record-unit.mjs
 ```
 
-`npm run test:browser` owns a temporary HTTP server and closes it when finished. It tests the **built export under `/preview/`**, including downloads, rather than the development server. Results and compact screenshots go in `artifacts/`. It exits nonzero for a failed executed check; an unavailable browser is separately recorded in `browser-results.json`. Inspect those limitations as well as the exit code.
+`npm run test:browser` owns a temporary HTTP server and closes it when finished. It tests the **built export under `/preview/`**, including downloads, rather than the development server. Machine-readable results and screenshots go to `test/scratch/validation/` (override with `BLOCKLIGHT_REPORTS`). That folder is scratch output and is not committed; the results of the final run are copied into the **Validation** tables below. The script exits nonzero for a failed executed check; a browser that cannot launch is recorded as a limitation in `browser-results.json`, so read those limitations as well as the exit code.
 
 The committed PNG share card is generated locally, with the same fonts and palette. To regenerate it after a visual change:
 
@@ -57,7 +58,7 @@ Set the same `BLOCKLIGHT_DEPENDENCIES` variable for browser scripts when using a
 
 ## Play and source behavior
 
-- **Play puzzle** begins the displayed round. A press flips that tile and its orthogonal neighbors; board edges do not wrap. All lights off wins, including on the last allowed move. A nonempty board at the move limit loses.
+- **Play puzzle** begins the displayed round, and so does pressing any tile on a ready board (that press counts as move 1). A press flips that tile and its orthogonal neighbors; board edges do not wrap. All lights off wins, including on the last allowed move. A nonempty board at the move limit loses.
 - The first ready screen is explicitly labeled **Demo · offline practice** while fetching a block. The first fresh header can replace this untouched bootstrap demo once. Starting a game or explicitly choosing a puzzle prevents that automatic replacement. Subsequent headers only make **Load latest block** available.
 - **Live snapshot** means an input actually received from the API. Its board is frozen. The separate feed status describes polling now. A stale/unavailable feed cannot create new live rounds; existing rounds still work.
 - **Play demo** loads the next numbered practice seed. Demo inputs never contain a pretend block number, hash or timestamp. **Open archive** lists this browser's started puzzles plus one real recorded Ethereum header.
@@ -160,18 +161,55 @@ An imported/shared block is labeled **Archive · unverified replay**. No network
 ## Two-minute reviewer walkthrough
 
 1. **0:00–0:20:** Open the site at a 390px viewport. The product, source label, score/move data and **Play puzzle** are visible immediately. The board is present on the same screen. Inspect the separately labeled live feed; if the API is unavailable, the message offers demo, archive and retry.
-2. **0:20–0:40:** Append `#p=1.d.1` to the page URL and reload for a repeatable, explicitly offline demo. Select **Play puzzle**. Tap a tile, undo it, then restart and confirm. Try **How to play**, Tab/Shift+Tab and Escape. The grid supports arrow keys and Space/Enter.
+2. **0:20–0:40:** Append `#p=1.d.1` to the page URL and reload for a repeatable, explicitly offline demo. Select **Play puzzle** (or just tap a tile). Tap a tile, undo it, then restart and confirm. Try **How to play**, Tab/Shift+Tab and Escape. The grid supports arrow keys and Space/Enter.
 3. **0:40–1:10:** For a quick win on a fresh Demo 1, press **A2, A3, A5, B1, C1, C2, C3, D3, D4, D5** once each, in any order. Rows are A–E from top to bottom; columns 1–5 from left to right. The result is **1,000 points at par 10** without hints/undo. Save the PNG, inspect the source and export JSON.
 4. **1:10–1:30:** Select **Play again** and press A1 18 times. A genuine loss appears at the move cap, with score 0. Select **Play again** to verify the starting board returns.
 5. **1:30–2:00:** Close the result if open. **Open archive**, replay a recorded block or import the exported JSON, and inspect its full seed/hash. Try **Copy puzzle link** (manual-copy field appears if clipboard access is denied). A new live block can be loaded explicitly; incoming blocks leave the current round fixed. The automated virtual-clock checks cover repeats, stale input and reorganization/reset cases without waiting a minute in real time.
 
 ## Validation and evidence
 
-Actual commands, observed results, screenshots, fixes and limits are recorded in [artifacts/validation.md](artifacts/validation.md), [artifacts/browser-results.json](artifacts/browser-results.json) and [artifacts/export-integrity.json](artifacts/export-integrity.json). [DESIGN.md](DESIGN.md) documents the final implemented design. These are worker-side observations, not an independent certification by the network.
+Every result below is from the worker's final run on **2026-11-03**, after the last source change, against the built `dist/` export served at a `/preview/` subpath. They are worker-side observations, not an independent certification by the network. [DESIGN.md](DESIGN.md) documents the final implemented design.
 
-**Actual final worker results (2026-11-03):** production build and strict typecheck passed; **39/39 deterministic tests**, **15/15 Chromium/WebKit browser groups** and **16/16 pinned visual-probe checks** passed. Full desktop and emulated-touch win/loss/restart, unavailable API/retry, idle/repeated/stale input, overlays, archive/JSON/link replay and PNG downloads were exercised. There was no horizontal overflow at 320, 390, 768, 960 or 1440px. Checked ready, active-with-hint and help-dialog states had **0 automated axe violations in both engines**. The actual Ethereum transport returned a live header with **0 page errors and 0 missing local resources**. The final lockfile audit reported **0 vulnerabilities**. Physical devices, assistive screen-reader use and native browser zoom remain unverified as detailed below.
+| Command | Result |
+| --- | --- |
+| `npm run typecheck` | Passed (strict `tsc --noEmit`) |
+| `node scripts/record-unit.mjs` (runs `npm test`) | **39/39** deterministic tests passed in 3 files |
+| `npm run build` | Passed; `dist/index.html`, one CSS and one JS bundle, fonts, favicon, share PNG |
+| `node scripts/check-export.mjs` | Passed: 9 runtime files, all HTML/CSS asset URLs relative and present, metadata and 1200×630 share card present, lockfile matches manifest, per-path budgets in [scripts/path-budget.json](scripts/path-budget.json) met, total well under 8 MiB |
+| `npm audit` (pinned lockfile) | 0 vulnerabilities |
+| `npm run test:browser` | **Chromium: 8/8 groups passed. WebKit: not run** (could not launch, see below) |
+| Design probe `taste.mjs` at 320/390/1440 | **16/16 checks passed** (render, layout, targets, contrast, casing, tracking, eyebrows, type-sizes, type-faces, glyphs, slogans, repetition, copy-budget, chrome, motion, share) |
 
-The deterministic suite covers 500 generated solvable samples, 80 comparisons to an independent GF(2) Gaussian-elimination solver, 100 complete optimal wins, known seed vectors, genuine loss and restart, strict API rejection, repeat/stale/epoch semantics, in-flight reset cancellation, short virtual polling intervals and archive/link reproduction. Browser checks exercise both desktop and emulated mobile input and distinguish deliberately mocked responses from the actual live-API check.
+Browser groups (Playwright 1.64.1, Chromium headless shell 1248):
+
+| Group | Result | What it exercised |
+| --- | --- | --- |
+| Keyboard, focus, hints, undo, confirmed restart (1440) | Pass | Enter on Play puzzle focuses A1; arrows move the roving tab stop; Space flips; undo −50; hint −100; help dialog traps Tab and returns focus on Escape; restart cancel and confirm; 0 page errors |
+| Complete loss, PNG, restart, win, JSON replay (1440) | Pass | Loss at 18 presses of A1 with score 0 and no stale notice in the dialog; 1200×1000 PNG download; Play again restores the board; optimal 10-move win at 1,000; JSON export; clipboard-denied fallback field; invalid JSON import recovers; demo and block JSON/link reproduce the same board; a forged score is ignored |
+| Touch flow at 390 (mobile emulation) | Pass | Play puzzle wholly inside the first 844px; tap centre cross; hint and hinted tap; help dialog; confirmed restart; **tapping a tile on a ready board starts the round (moves 0 → 1)**; hint button is not primary-styled; full win with no "Round started" line in the dialog; loss and PNG download |
+| Unavailable API, retry, active-round protection | Pass | Deliberately mocked HTTP 503 is labelled "Ethereum API unavailable"; demo stays playable; retry leaves the active board alone; switching puzzles mid-round needs confirmation |
+| Idle live input, repeats and stale UI (virtual clock) | Pass | Mocked headers under a virtual clock: new and repeated blocks leave ready and active boards fixed; a stale feed disables Load latest block while play continues |
+| Responsive reflow, text enlargement, motion, accessibility | Pass | No horizontal overflow at 320, 390, 768, 960, 1440; 200% root text size; reduced motion; axe-core (WCAG 2.2 AA tags) **0 violations** in ready, active-with-hint and help-dialog states |
+| Rendered contrast and visible focus | Pass | Body 13.805:1, muted 6.153:1, board labels 11.125:1, unlit tile/board 3.005:1, unlit marker/tile 4.595:1, lit marker/tile 11.787:1, primary button 11.787:1, outline hint button 13.805:1, focus ring/board 13.805:1; focus ring 3px solid; forced-colors mode has no overflow |
+| Actual API and production screenshots | Pass | Real Ethereum header received ("Ethereum feed is live", "Live snapshot · locked for this round", block #26,334,445); 0 page errors, 0 missing local resources, local fonts loaded, Play puzzle visible at 390×844. On this machine the request was routed through the contributor's Ethereum RPC; the shipped bundle calls only PublicNode |
+
+Checks that did **not** run in the final pass: WebKit (Playwright reported missing host libraries such as `libx264.so` and the machine allows no system package install); a physical phone; a screen-reader session; browser-native zoom; a real-time (non-virtual-clock) wait for staleness. The 390 probe screenshot was inspected by eye: brand, How to play, headline, source label, block title, moves/par/potential, Play puzzle and the top of the board are all on the first screen.
+
+The deterministic suite covers 500 generated solvable samples, 80 comparisons to an independent GF(2) Gaussian-elimination solver, 100 complete optimal wins, known seed vectors, genuine loss and restart, strict API rejection, repeat/stale/epoch semantics, in-flight reset cancellation, short virtual polling intervals and archive/link reproduction.
+
+### Design review (Better Interface, six domains)
+
+The pinned guide was applied while building and re-checked across accessibility, layout, writing, typography, colors and UI. Findings fixed in this revision:
+
+| Domain | Finding | Fix |
+| --- | --- | --- |
+| UI / accessibility | Board ignored taps before Play puzzle with no feedback | Tiles enabled in the ready state; the first press starts the round (`src/components/Board.tsx:11`, `src/App.tsx:90`) |
+| UI | Penalty action (hint, −100) reused the lime primary style in the Play puzzle slot | Outline style (`src/App.tsx:145`) |
+| Writing | Result dialog repeated a stale "Round started" status | Notice cleared when a round ends (`src/App.tsx:64`) |
+| Writing | Extra slogans in header, footer and help title competed with the hero | Removed the header note and footer line; help dialog titled "How to play" (`src/App.tsx:135`, `:164`, `:166`) |
+| Fidelity | README linked evidence and license files that were never committed | Results tables above; license notice in `LICENSES/`; budget in `scripts/` |
+
+Remaining limits: contrast was measured in Chromium only; assistive technology and native zoom were not exercised; passing automated checks is not a claim of full WCAG conformance.
 
 ## Known limits
 
@@ -181,14 +219,14 @@ The deterministic suite covers 500 generated solvable samples, 80 comparisons to
 - Storage is local to the browser/origin and can be evicted. Active moves are not persisted across reloads; archive inputs and exports preserve the original puzzle. Scores are local attempt values, editable by someone controlling their browser, and have no monetary or competitive authority.
 - Offline demo/archive play works after the static page and assets load. There is no service worker guaranteeing a cold offline first visit. `file://` module loading is not supported; use a static HTTP preview or the hosted export.
 - Automated mobile input is emulation, not a physical phone. No assistive screen-reader session or native Safari/iOS session was available. Root text enlargement to 200% is checked; browser-native zoom and manual animation-panel inspection are separately unverified. Passing automated accessibility checks is not a claim of full conformance.
-- The assigned browser connector could not initialize its configured Chrome binary. Actual render and interaction checks used separately installed Playwright browsers. WebKit required temporary system-library and software-rendering setup; no such libraries are shipped with the website.
+- Render and interaction checks used Playwright browsers installed outside the repository. WebKit could not launch on the final validation machine, so Safari-engine behaviour is unverified in this revision. No browser binaries or system libraries ship with the website.
 
 ## Submission, byte budget and publication
 
-The complete export is `dist/index.html` plus its assets, fonts, font licenses, favicon and share PNG. No dependency cache, browser binary, registry mirror, `.tgz`, server bundle or submodule is required or included. The explicit ignore-path and per-directory budgets are in [artifacts/path-budget.json](artifacts/path-budget.json); generated dependency/cache directories have a **0-byte submission budget at every nesting level**. `dist/` is deliberately included. The total additions must stay below **8,388,608 bytes**, checked by `scripts/check-export.mjs`.
+The complete export is `dist/index.html` plus its assets, fonts, font licenses, favicon and share PNG. No dependency cache, browser binary, registry mirror, `.tgz`, server bundle or submodule is required or included. The explicit ignore-path and per-directory budgets are in [scripts/path-budget.json](scripts/path-budget.json); generated dependency/cache directories have a **0-byte submission budget at every nesting level**. `dist/` is deliberately included. The total additions must stay below **8,388,608 bytes**, checked by `scripts/check-export.mjs`.
 
 **IMD publishes the submitted export after this worker finishes.** Job URL, live IPFS site URL, public source URL and commit identifier have not been supplied to this checkout and cannot be truthfully filled before that publication step. They are network-side outputs, not fabricated links or local preview addresses. No publish command was run, and no protected Git metadata was modified. The source, lockfile and finished export are ready for the network's submission bundle.
 
 ## Design guidance and assets
 
-The pinned Better Interface guide was applied while building and reviewed across accessibility, layout, writing, typography, colors and UI. The independent final review, concrete source findings, fixes and check coverage are in `artifacts/validation.md`. Guidance is adapted from [Jakub Krehel's Better Interface](https://github.com/jakubkrehel/skills/tree/267330e1adfc66a718fb65fa6918c1f06d0a689e/skills/better-interface) (MIT) and Paul Bakaus's [Impeccable documentation method](https://github.com/pbakaus/impeccable/blob/9d715cc4f5564a990ca8345abfdd5df6dc9b41c8/skill/reference/document.md) (Apache-2.0); included license notices are in `artifacts/licenses/Design-guidance-LICENSE.txt`. Space Grotesk and DM Sans are bundled as local Latin variable WOFF2 files with their original SIL Open Font License notices in `public/fonts/` and `dist/fonts/`.
+The pinned Better Interface guide was applied while building and reviewed across accessibility, layout, writing, typography, colors and UI. Coverage, findings and fixes are in the **Design review** table above. Guidance is adapted from [Jakub Krehel's Better Interface](https://github.com/jakubkrehel/skills/tree/267330e1adfc66a718fb65fa6918c1f06d0a689e/skills/better-interface) (MIT) and Paul Bakaus's [Impeccable documentation method](https://github.com/pbakaus/impeccable/blob/9d715cc4f5564a990ca8345abfdd5df6dc9b41c8/skill/reference/document.md) (Apache-2.0); included license notices are in [LICENSES/Design-guidance-LICENSE.txt](LICENSES/Design-guidance-LICENSE.txt). Space Grotesk and DM Sans are bundled as local Latin variable WOFF2 files with their original SIL Open Font License notices in `public/fonts/` and `dist/fonts/`.

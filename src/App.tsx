@@ -61,7 +61,7 @@ export function App() {
   }, [feed]);
 
   useEffect(() => {
-    if (round.phase === 'won' || round.phase === 'lost') setDialog('result');
+    if (round.phase === 'won' || round.phase === 'lost') { setNotice(''); setDialog('result'); }
   }, [round.phase]);
 
   function save(input: PuzzleInput) {
@@ -74,7 +74,7 @@ export function App() {
   }
   function select(input: PuzzleInput, origin: Origin) {
     autoLive.current = false;
-    setRound(createRound(input, origin)); setDialog(null); setArchiveError(''); setNotice('Puzzle loaded. Select Play puzzle to begin.');
+    setRound(createRound(input, origin)); setDialog(null); setArchiveError(''); setNotice('Puzzle loaded. Select Play puzzle or any tile to begin.');
     try { history.replaceState(null, '', `${location.pathname}${location.search}${encodeInput(input)}`); } catch { /* IPFS gateways can restrict history. */ }
     setTimeout(() => startButton.current?.focus({ preventScroll: true }), 0);
   }
@@ -86,6 +86,10 @@ export function App() {
   function start() {
     autoLive.current = false; save(round.puzzle.input); game({ type: 'start' }); setNotice('Round started. Turn every light off.');
     setTimeout(() => document.querySelector<HTMLButtonElement>('.tile[tabindex="0"]')?.focus({ preventScroll: true }), 0);
+  }
+  function press(cell: number) {
+    if (round.phase === 'ready') { autoLive.current = false; save(round.puzzle.input); game({ type: 'start' }); setNotice('Round started. Turn every light off.'); }
+    game({ type: 'press', cell });
   }
   function restart(play = false) {
     const next = createRound(round.puzzle.input, round.origin);
@@ -128,7 +132,7 @@ export function App() {
     <a className="skip-link" href="#game">Skip to game</a>
     <header className="site-header container">
       <a className="brand" href="./" aria-label="Blocklight home"><Mark /><span>Blocklight</span></a>
-      <div className="header-utilities"><span className="wallet-note">No wallet. Just logic.</span><button className="button button-quiet" onClick={() => setDialog('help')}><Icon name="help" />How to play</button></div>
+      <div className="header-utilities"><button className="button button-quiet" onClick={() => setDialog('help')}><Icon name="help" />How to play</button></div>
     </header>
     <main id="game" className="container">
       <div className="intro"><h1>Every block.<br className="desktop-break" /> <span>Lights out.</span></h1><p>A logic puzzle born from<br className="desktop-break" /> an Ethereum block.</p></div>
@@ -138,13 +142,13 @@ export function App() {
           <h2 className="round-name">{blockTitle(input)}</h2>
           <dl className="metrics"><div><dt>Moves</dt><dd><span data-testid="moves">{round.history.length}</span><span className="metric-total"> / {round.puzzle.limit}</span></dd></div><div><dt>Par</dt><dd>{round.puzzle.par}</dd></div><div><dt>{terminal ? 'Score' : 'Potential'}</dt><dd data-testid="score">{score(round)}</dd></div></dl>
           {round.phase === 'ready' ? <button className="button button-primary main-action" ref={startButton} onClick={start}>Play puzzle<Icon name="arrow" /></button>
-            : active ? <button className="button button-primary main-action" onClick={() => game({ type: 'hint' })} disabled={round.hintCell !== null}>Show a hint<span>−100 pts</span></button>
+            : active ? <button className="button button-outline main-action" onClick={() => game({ type: 'hint' })} disabled={round.hintCell !== null}>Show a hint<span>−100 pts</span></button>
             : <button className="button button-primary main-action" onClick={() => restart(true)}>Play again<Icon name="arrow" /></button>}
           <p className="round-guidance" role="status" aria-atomic="true">{round.phase === 'ready' ? `All lights off within ${round.puzzle.limit} moves. No time limit.` : round.phase === 'won' ? `Grid cleared in ${round.history.length} moves. Nicely done.` : round.phase === 'lost' ? 'Out of moves. A fresh attempt starts on the same board.' : round.hintCell !== null ? `Hint: flip tile ${cellName(round.hintCell)}. The marked tile is one move in a shortest solution.` : `${round.puzzle.limit - round.history.length} moves left. Take your time.`}</p>
           {terminal && <button className="text-button" onClick={() => setDialog('result')}>View round result<Icon name="arrow" size={16} /></button>}
           <div className="score-note"><Icon name="bolt" size={18} /><span>Start at 1,000 points. Keep moves close to par.</span></div>
         </section>
-        <Board round={round} onPress={cell => game({ type: 'press', cell })} onUndo={() => { game({ type: 'undo' }); setNotice('Move undone. 50-point penalty applied.'); }} onRestart={() => round.history.length ? setDialog('restart') : restart()} onExport={() => { if (!exporting) void png(); }} />
+        <Board round={round} onPress={press} onUndo={() => { game({ type: 'undo' }); setNotice('Move undone. 50-point penalty applied.'); }} onRestart={() => round.history.length ? setDialog('restart') : restart()} onExport={() => { if (!exporting) void png(); }} />
         <section className="source-panel" aria-label="Choose a puzzle source">
           <div className={`feed-status feed-${feed.status}`} role="status"><span className="status-dot" aria-hidden="true" /><span>{feedLabel}</span></div>
           <p className="feed-detail">{feed.block ? <>Latest: #{integer.format(feed.block.number)}{feed.epoch > 0 ? ` · feed epoch ${feed.epoch}` : ''}<br />{feed.status === 'live' ? newBlock ? 'A new block is ready when you are.' : 'This round stays fixed as blocks arrive.' : feed.status === 'stale' ? 'No fresh block. Your round is safe to continue.' : 'Your current puzzle is still playable.'}</> : feed.status === 'connecting' ? 'Fetching a real block. Demo play is ready below.' : 'Live blocks could not be loaded. Demo and archive play still work.'}</p>
@@ -157,9 +161,9 @@ export function App() {
       <div className="notice" role="status" aria-live="polite">{notice}</div>
       {storageWarning && <p className="storage-warning">{storageWarning}</p>}
     </main>
-    <footer className="site-footer container"><span>A small puzzle from a big network.</span><button className="text-button" onClick={() => setDialog('source')}>See puzzle source<Icon name="info" size={16}/></button><span>Blocklight · v1</span></footer>
+    <footer className="site-footer container"><button className="text-button" onClick={() => setDialog('source')}>See puzzle source<Icon name="info" size={16}/></button><span>Blocklight · v1</span></footer>
 
-    {dialog === 'help' && <Modal title="Make a little darkness." onClose={() => setDialog(null)}>
+    {dialog === 'help' && <Modal title="How to play" onClose={() => setDialog(null)}>
       <p>Blocklight is a 5 × 5 Lights Out puzzle. Turn every light off before you run out of moves.</p>
       <ol className="how-list"><li><strong>Flip a tile.</strong> It changes itself and the tiles directly above, below, left and right. Edges never wrap.</li><li><strong>Think in crosses.</strong> Pressing the same tile twice cancels out. The outlined tiles show what your next press will change.</li><li><strong>Beat par.</strong> Par is the fewest moves needed from the starting board. Every puzzle is solvable, with eight spare moves.</li></ol>
       <div className="help-example" aria-label="A press flips five tiles in a cross"><div className="mini-grid" aria-hidden="true">{Array.from({ length: 9 }, (_, i) => <span className={[1, 3, 4, 5, 7].includes(i) ? 'mini-on' : ''} key={i}>{i === 4 ? '+' : ''}</span>)}</div><p>One press.<br />A small chain reaction.</p></div>

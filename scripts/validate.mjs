@@ -7,7 +7,7 @@ import { serveExport } from './static-server.mjs';
 const { chromium, webkit } = dependencyRequire('playwright');
 const playwrightTimeout = 8_000;
 const AxeBuilder = dependencyRequire('@axe-core/playwright').default;
-const output = resolve('artifacts');
+const output = resolve(process.env.BLOCKLIGHT_REPORTS ?? 'test/scratch/validation');
 await mkdir(resolve(output, 'screenshots'), { recursive: true });
 await mkdir(resolve(output, 'exports'), { recursive: true });
 const report = { generatedAt: new Date().toISOString(), target: 'production dist/ at a /preview/ subpath', checks: [], limitations: [] };
@@ -110,6 +110,7 @@ try {
         for (let i = 0; i < limit; i++) await page.locator('[data-cell="0"]').click();
         await page.getByRole('heading', { name: 'Out of moves.', exact: true }).waitFor();
         assert.equal(await page.getByTestId('score').textContent(), '0');
+        assert(!(await page.getByRole('dialog').innerText()).includes('Round started'), 'Loss dialog must not show a stale start notice');
         const png = await downloaded(page, () => page.getByRole('dialog').getByRole('button', { name: 'Save PNG', exact: true }).click());
         assert.equal(png.data.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
         assert.equal(png.data.readUInt32BE(16), 1200); assert.equal(png.data.readUInt32BE(20), 1000); assert(png.data.length > 10_000);
@@ -158,10 +159,16 @@ try {
         await page.getByRole('button', { name: 'Close dialog', exact: true }).tap();
         await page.getByRole('button', { name: 'Restart', exact: true }).tap(); await page.getByRole('button', { name: 'Restart puzzle', exact: true }).tap();
         assert.equal(await board(page), initial); assert.equal(await page.getByTestId('moves').textContent(), '0');
-        await page.getByRole('button', { name: 'Play puzzle', exact: true }).tap();
-        for (const cell of solveRendered(await board(page))) await page.locator(`[data-cell="${cell}"]`).tap();
+        // A first tile tap in the ready state starts the round and counts as a move.
+        const [first, ...rest] = solveRendered(await board(page));
+        assert(await page.locator(`[data-cell="${first}"]`).isEnabled());
+        await page.locator(`[data-cell="${first}"]`).tap();
+        assert.equal(await board(page), initial ^ mask(first)); assert.equal(await page.getByTestId('moves').textContent(), '1');
+        assert(await page.getByRole('button', { name: /Show a hint/ }).evaluate(el => !el.classList.contains('button-primary')), 'Hint penalty must not use the primary style');
+        for (const cell of rest) await page.locator(`[data-cell="${cell}"]`).tap();
         await page.getByRole('heading', { name: 'Lights out. Well played.', exact: true }).waitFor();
         assert.equal(await page.getByTestId('score').textContent(), '1000');
+        assert(!(await page.getByRole('dialog').innerText()).includes('Round started'), 'Result dialog must not show a stale start notice');
         if (engine === 'chromium') await screenshot(page, 'win-mobile.jpg');
         await page.getByRole('dialog').getByRole('button', { name: 'Play again', exact: true }).tap();
         const limit = Number((await page.locator('.metric-total').textContent()).replace(/\D/g, ''));
@@ -169,7 +176,7 @@ try {
         await page.getByRole('heading', { name: 'Out of moves.', exact: true }).waitFor();
         const png = await downloaded(page, () => page.getByRole('dialog').getByRole('button', { name: 'Save PNG', exact: true }).tap());
         assert.equal(png.data.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
-        await context.close(); return 'Touch emulation, not a physical phone. Primary action wholly above 844px; all 25 tiles render; center cross, hint, help, confirmed restart, full win/loss and PNG download work.';
+        await context.close(); return 'Touch emulation, not a physical phone. Primary action wholly above 844px; all 25 tiles render; center cross, hint, help, confirmed restart, tile tap starts a ready round, full win/loss with no stale notice, and PNG download work.';
       });
 
       await check(`${engine}: unavailable API, retry and active-round protection`, async () => {
@@ -240,11 +247,12 @@ try {
       await check(`${engine}: rendered contrast and visible keyboard focus`, async () => {
         const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
         await offline(page); await loadDemo(page);
+        const primary = await page.locator('.button-primary.main-action').evaluate(el => { const s = getComputedStyle(el); return { color: s.color, backgroundColor: s.backgroundColor }; });
         await page.getByRole('button', { name: 'Play puzzle', exact: true }).focus();
         await page.keyboard.press('Enter'); await page.keyboard.press('ArrowRight');
         await page.locator('[data-cell="0"]').focus();
         await page.waitForTimeout(160);
-        const measured = await page.evaluate(() => {
+        const measured = await page.evaluate(primary => {
           const style = selector => getComputedStyle(document.querySelector(selector));
           const lum = value => {
             const channels = value.match(/[\d.]+/g).slice(0, 3).map(Number).map(c => c / 255).map(c => c <= .04045 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4);
@@ -260,12 +268,13 @@ try {
               ['unlit tile / board', off.backgroundColor, frame.backgroundColor, 3],
               ['unlit marker and hint / tile', off.color, off.backgroundColor, 4.5],
               ['lit marker / tile', on.color, on.backgroundColor, 3],
-              ['primary button text / fill', button.color, button.backgroundColor, 4.5],
+              ['primary button text / fill', primary.color, primary.backgroundColor, 4.5],
+              ['hint button text / page', button.color, root.backgroundColor, 4.5],
               ['board focus ring / board', focus.outlineColor, frame.backgroundColor, 3],
             ].map(([name, foreground, background, required]) => ({ name, foreground, background, required, ratio: contrast(foreground, background) })),
             focus: { width: focus.outlineWidth, offset: focus.outlineOffset, style: focus.outlineStyle },
           };
-        });
+        }, primary);
         for (const pair of measured.pairs) assert(pair.ratio >= pair.required, JSON.stringify(pair));
         assert.equal(measured.focus.width, '3px'); assert.equal(measured.focus.style, 'solid');
         if (engine === 'chromium') await screenshot(page, 'keyboard-focus-desktop.jpg');

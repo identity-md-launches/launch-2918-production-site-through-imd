@@ -8,6 +8,7 @@ export function Board({ round, onPress, onRestart, onUndo, onExport }: { round: 
   const [hovered, setHovered] = useState<number | null>(null);
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const active = round.phase === 'playing';
+  const pressable = active || round.phase === 'ready';
   function navigate(event: KeyboardEvent<HTMLButtonElement>, i: number) {
     let next = i;
     const row = Math.floor(i / SIZE), col = i % SIZE;
@@ -29,12 +30,12 @@ export function Board({ round, onPress, onRestart, onUndo, onExport }: { round: 
           {Array.from({ length: SIZE }, (_, col) => {
             const i = row * SIZE + col, on = !!(round.board & (1 << i));
             const hint = round.hintCell === i;
-            const affected = active && hovered !== null && !!(MASKS[hovered] & (1 << i));
+            const affected = pressable && hovered !== null && !!(MASKS[hovered] & (1 << i));
             return <div className="grid-cell" role="gridcell" key={i}>
               <button ref={el => { refs.current[i] = el; }} data-cell={i}
                 className={`tile${on ? ' tile-on' : ''}${hint ? ' tile-hint' : ''}${affected ? ' tile-affected' : ''}`}
                 aria-label={`${cellName(i)}, light ${on ? 'on' : 'off'}${hint ? ', suggested move' : ''}`}
-                aria-pressed={on} disabled={!active} tabIndex={i === focused ? 0 : -1}
+                aria-pressed={on} disabled={!pressable} tabIndex={i === focused ? 0 : -1}
                 onFocus={() => { setFocused(i); setHovered(i); }} onBlur={() => setHovered(null)}
                 onMouseEnter={() => setHovered(i)} onKeyDown={e => navigate(e, i)} onClick={() => onPress(i)}>
                 <span className="light-mark" aria-hidden="true" />{hint && <span className="hint-label" aria-hidden="true">Hint</span>}

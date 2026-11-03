@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -47,8 +47,9 @@ const lock = JSON.parse(await readFile('package-lock.json', 'utf8'));
 const pkg = JSON.parse(await readFile('package.json', 'utf8'));
 assert.deepEqual(lock.packages[''].dependencies, pkg.dependencies);
 assert.deepEqual(lock.packages[''].devDependencies, pkg.devDependencies);
-const budget = JSON.parse(await readFile('artifacts/path-budget.json', 'utf8'));
+const budget = JSON.parse(await readFile('scripts/path-budget.json', 'utf8'));
 const measured = Object.fromEntries(Object.keys(budget.pathBudgets).map(key => [key, 0]));
+const reports = resolve(process.env.BLOCKLIGHT_REPORTS ?? 'test/scratch/validation');
 const submission = await files('.');
 for (const path of submission) {
   const prefix = Object.keys(measured).find(key => path.startsWith(key));
@@ -58,7 +59,8 @@ for (const path of submission) {
 }
 const totalBytes = Object.values(measured).reduce((a, b) => a + b, 0);
 for (const [path, bytes] of Object.entries(measured)) assert(bytes <= budget.pathBudgets[path], `Path budget exceeded for ${path}: ${bytes}`);
-assert(totalBytes < budget.submissionLimitBytes - 16_384, `Submission exceeds 8 MiB, allowing for this report: ${totalBytes}`);
-const result = { generatedAt: new Date().toISOString(), passed: true, relativeAssets: true, shareCard: '1200×630 PNG', lockfileMatches: true, distFiles: manifest, pathBytes: measured, totalBytesBeforeThisReport: totalBytes, submissionLimitBytes: budget.submissionLimitBytes };
-await writeFile('artifacts/export-integrity.json', JSON.stringify(result, null, 2) + '\n');
-console.log(`Export integrity passed: ${manifest.length} complete runtime files; ${totalBytes} submission bytes before updating this report / ${budget.submissionLimitBytes} allowed.`);
+assert(totalBytes < budget.submissionLimitBytes, `Submission exceeds 8 MiB: ${totalBytes}`);
+const result = { generatedAt: new Date().toISOString(), passed: true, relativeAssets: true, shareCard: '1200×630 PNG', lockfileMatches: true, distFiles: manifest, pathBytes: measured, totalBytes, submissionLimitBytes: budget.submissionLimitBytes };
+await mkdir(reports, { recursive: true });
+await writeFile(join(reports, 'export-integrity.json'), JSON.stringify(result, null, 2) + '\n');
+console.log(`Export integrity passed: ${manifest.length} complete runtime files; ${totalBytes} submission bytes / ${budget.submissionLimitBytes} allowed.`);

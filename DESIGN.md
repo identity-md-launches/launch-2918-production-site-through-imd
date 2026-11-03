@@ -28,7 +28,7 @@ Primitives are declared at `src/styles/app.css:5`; component rules use semantic 
 
 There is one intentionally light theme. Do not add an unused theme ramp. Every feed state has text and a dot treatment; lights have filled versus outlined center marks and `aria-pressed`, so state is not conveyed by hue alone. Affected lit tiles use a dark inset outline; affected unlit tiles use light ink. Board focus and hint outlines sit outside the tiles against the dark frame.
 
-Actual computed solid pairs were measured in both Chromium and WebKit: primary ink/page **13.805:1**, muted ink/page **6.153:1**, frame labels/frame **11.125:1**, off-tile boundary/frame **3.005:1**, off marker/hint ink/tile **4.595:1**, primary button ink/fill **11.787:1**, board focus/frame **13.805:1**. See `artifacts/browser-results.json` for colors and thresholds. Disabled controls are intentionally dimmed. The translucent modal backdrop is decorative; text is on the opaque dialog surface. These measurements do not establish every possible user color preference.
+Actual computed solid pairs were measured in Chromium: primary ink/page **13.805:1**, muted ink/page **6.153:1**, frame labels/frame **11.125:1**, off-tile boundary/frame **3.005:1**, off marker/hint ink/tile **4.595:1**, primary button ink/fill **11.787:1**, outline hint button ink/page **13.805:1**, board focus/frame **13.805:1**. The 2026-11-03 revision re-measured these with `npm run test:browser` (WebKit could not launch on that machine); the per-pair table is in `README.md` under Validation. Disabled controls are intentionally dimmed. The translucent modal backdrop is decorative; text is on the opaque dialog surface. These measurements do not establish every possible user color preference.
 
 ## Typography
 
@@ -57,7 +57,7 @@ Shared spacing tokens are **4, 8, 12, 16, 24, 32, 48 and 64px** (`--space-*`). A
 
 - **Above 60rem:** container width is `min(1160px, 100% − 80px)`. The workspace has a board column capped at 520px, a second column of at least 300px, and a 64px gap. The heading is a compact single row with a plain product description alongside. The board frame has 24px padding; grid gaps are 10px.
 - **At or below 60rem:** the container uses 24px side margins; the workspace uses 32px gaps and flexible 1.25fr/1fr columns with a 280px minimum on the controls. Frame padding becomes 16px, grid gaps 8px.
-- **At or below 44rem:** one column with a 500px maximum and 16px side margins. Round controls and Play puzzle appear before the board, then source controls. The same order is in the DOM. The brand and help remain at opposite ends of a 76px header. The h1 is 32px. Secondary desktop notes are hidden; the essential rules remain beside the board and in Help. Workspace gaps and intro padding are 16px.
+- **At or below 44rem:** one column with a 500px maximum and 16px side margins. Round controls and Play puzzle appear before the board, then source controls. The same order is in the DOM. The brand and help remain at opposite ends of a 76px header. The h1 is 32px. The essential rules remain beside the board and in Help. Workspace gaps and intro padding are 16px.
 - **At or below 22rem:** frame padding is 12px, tile gaps 6px and tile corners 8px; brand text is 16px. This keeps all five columns usable at 320px.
 
 The 5×5 board remains square. Coordinates are physical and the grid keeps `direction: ltr` even when the surrounding page is mirrored. Logical margins/padding handle surrounding layout direction. Text containers grow and wrap; full hashes and share links are never ellipsized. Dialogs scroll within `100dvh − 48px` and retain 16px viewport margins.
@@ -84,7 +84,7 @@ Standard buttons are at least 48px tall; desktop primary gameplay is 56px, mobil
 
 ### Board
 
-`src/components/Board.tsx` receives the current `Round` and callbacks for press, restart, undo and export. It owns only focus/hover presentation. A native button in each semantic gridcell exposes its coordinate, on/off state, and hint state. The board is disabled before starting and after finishing.
+`src/components/Board.tsx` receives the current `Round` and callbacks for press, restart, undo and export. It owns only focus/hover presentation. A native button in each semantic gridcell exposes its coordinate, on/off state, and hint state. Tiles are enabled in the ready state: the first press starts the round and counts as move 1. The board is disabled only after a win or loss.
 
 Arrow keys and Home/End move a roving tab stop; Space/Enter activate. The current focus has a **3px solid ivory ring, 3px offset**. A hint has a dashed ring and visible “Hint” label. Hover/focus outlines preview the pressed tile's cross. Start and replay focus the active grid tile. On/off markers differ by filled versus outlined centers.
 
@@ -94,7 +94,7 @@ Arrow keys and Home/End move a roving tab stop; Space/Enter activate. The curren
 
 ### Round controls and source panel
 
-These are composition patterns in `src/App.tsx`, not an exported component library. The round panel presents origin, identity, moves/par/potential, and one main action. The guidance is a polite atomic status region for hints and remaining moves. Feed status is separately announced. This distinguishes a locked round from the changing feed.
+These are composition patterns in `src/App.tsx`, not an exported component library. The round panel presents origin, identity, moves/par/potential, and one main action in the same slot: **Play puzzle** (`.button-primary`) when ready, **Show a hint −100 pts** (`.button-outline`, deliberately not primary because it costs points) during play, and **Play again** (`.button-primary`) after a result. The header holds only the brand and How to play; the footer holds See puzzle source and the version. The result dialog's status line starts empty and only reports a PNG export. The guidance is a polite atomic status region for hints and remaining moves. Feed status is separately announced. This distinguishes a locked round from the changing feed.
 
 Source choices show loading/live/stale/unavailable/paused with text. Load latest block is disabled unless there is a fresh different input. Demo and archive remain usable. Local storage errors have a visible warning; no fabricated data fills an API outage.
 
@@ -117,4 +117,4 @@ Interaction transitions are **120ms**, explicit `background-color` and `scale`, 
 - Keep full identifiers available and copyable. Add no fixed-height text box, cropped hash or ellipsis to force a fit.
 - To add another small view, compose existing buttons, heading steps and flat source rows; keep hash routing/static export compatibility and recheck 390px. Do not add another font, decorative card stack or unneeded wallet integration.
 
-Design workflow attribution: Better Interface by Jakub Krehel (MIT); documentation method adapted from Impeccable by Paul Bakaus (Apache-2.0). Exact pinned source links are in `README.md`; notices and licenses are retained in `artifacts/licenses/Design-guidance-LICENSE.txt`.
+Design workflow attribution: Better Interface by Jakub Krehel (MIT); documentation method adapted from Impeccable by Paul Bakaus (Apache-2.0). Exact pinned source links are in `README.md`; notices and licenses are retained in `LICENSES/Design-guidance-LICENSE.txt`.

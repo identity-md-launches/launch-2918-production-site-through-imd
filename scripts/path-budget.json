@@ -1,0 +1,13 @@
+{
+  "submissionLimitBytes": 8388608,
+  "zeroByteGeneratedPaths": ["**/node_modules/", "**/.vite/", "**/.vitest/", "**/coverage/", "**/*.tsbuildinfo", "/test/scratch/"],
+  "pathBudgets": {
+    "dist/": 1048576,
+    "public/": 1048576,
+    "src/": 524288,
+    "tests/": 262144,
+    "scripts/": 262144,
+    "LICENSES/": 65536,
+    "root source, lockfile and documentation": 524288
+  }
+}
