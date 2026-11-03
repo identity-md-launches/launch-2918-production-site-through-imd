@@ -1,0 +1,9 @@
+# Explicit path budget: these generated paths have a 0-byte submission budget.
+# The complete budget and per-deliverable limits are in artifacts/path-budget.json.
+# All source, public runtime assets, lockfiles, tests and dist/ remain included.
+**/node_modules/
+**/.vite/
+**/.vitest/
+**/coverage/
+**/*.tsbuildinfo
+/test/scratch/
