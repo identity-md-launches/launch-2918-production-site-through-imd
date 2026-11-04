@@ -18,7 +18,7 @@ export function Board({ run, onSelect, onRotate, disabled = false, tutorialTarge
         const row = Math.floor(i / 6), col = i % 6;
         const next = e.key === 'ArrowRight' ? row * 6 + (col + 1) % 6 : e.key === 'ArrowLeft' ? row * 6 + (col + 5) % 6 : e.key === 'ArrowDown' ? ((row + 1) % 6) * 6 + col : e.key === 'ArrowUp' ? ((row + 5) % 6) * 6 + col : -1;
         if (next >= 0) { e.preventDefault(); buttons.current[next]?.focus(); }
-        if (e.key.toLowerCase() === 'r' && !disabled) { e.preventDefault(); onRotate(); }
+        if (e.key.toLowerCase() === 'r' && !e.ctrlKey && !e.metaKey && !e.altKey && !disabled) { e.preventDefault(); onRotate(); }
       }}>
       <svg viewBox="0 0 100 100" aria-hidden="true" dangerouslySetInnerHTML={{ __html: tileArt(tile, powered.has(i), run.boosted.includes(i)) }} />
       {run.selected === i && <span className="tile-coordinate" aria-hidden="true">{cellName(i)}</span>}

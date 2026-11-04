@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-04T02:07:42.175Z",
+  "generatedAt": "2026-11-04T02:59:44.735Z",
   "command": "npm test -- --reporter=json --outputFile=test/scratch/unit-raw.json",
   "success": true,
-  "total": 34,
-  "passed": 34,
+  "total": 37,
+  "passed": 37,
   "failed": 0,
   "pending": 0,
   "suites": [
@@ -14,82 +14,97 @@
         {
           "name": "strict verified public API adapters validates schema and every consumed status field, ignores optimistic projections",
           "status": "passed",
-          "durationMs": 5.697198000000014
+          "durationMs": 13.457646000000011
         },
         {
           "name": "strict verified public API adapters requires actual network, release and lifecycle from economy schema 2",
           "status": "passed",
-          "durationMs": 1.0499240000000327
+          "durationMs": 1.6456489999999917
         },
         {
           "name": "new-work energy accounting pins lifetime counters without awarding the past, including zero-work initial counters",
           "status": "passed",
-          "durationMs": 0.649772999999982
+          "durationMs": 1.2441499999999905
         },
         {
           "name": "new-work energy accounting earns only paired positive deltas, preserves fractional mm, caps at 3 and discards overflow",
           "status": "passed",
-          "durationMs": 0.6319470000000251
+          "durationMs": 1.95508099999995
         },
         {
           "name": "new-work energy accounting never duplicates energy from repeated or reordered timestamps, even after a charge is consumed",
           "status": "passed",
-          "durationMs": 0.7037839999999846
+          "durationMs": 0.75291500000003
         },
         {
           "name": "new-work energy accounting counter decreases retain high-water marks; replayed old counters earn nothing",
           "status": "passed",
-          "durationMs": 0.5435049999999819
+          "durationMs": 1.053892000000019
         },
         {
           "name": "new-work energy accounting epoch, installation, release and chain changes rebaseline; returning to an old identity cannot replay it",
           "status": "passed",
-          "durationMs": 1.016463999999985
+          "durationMs": 1.8189270000000306
         },
         {
           "name": "new-work energy accounting stale and unavailable input suspend bonuses and rebaseline fresh reconnects",
           "status": "passed",
-          "durationMs": 0.4286920000000123
+          "durationMs": 8.981908999999973
+        },
+        {
+          "name": "new-work energy accounting keeps the baseline pending through pre-break repeats and discards hidden-gap movement",
+          "status": "passed",
+          "durationMs": 7.680802000000028
         },
         {
           "name": "new-work energy accounting zero-distance or zero-work samples never bank unpaired movement",
           "status": "passed",
-          "durationMs": 0.4362939999999753
+          "durationMs": 0.4682339999999954
         },
         {
           "name": "new-work energy accounting reports honest idle, live, stale and unavailable states including time and freshness bounds",
           "status": "passed",
-          "durationMs": 5.347463000000005
+          "durationMs": 0.57442199999997
+        },
+        {
+          "name": "new-work energy accounting uses either motion field for live and requires both zero for idle, regardless of core lifecycle",
+          "status": "passed",
+          "durationMs": 0.49312600000001794
         },
         {
           "name": "serialized, abortable polling honors numeric/date Retry-After values",
           "status": "passed",
-          "durationMs": 1.2504539999999906
+          "durationMs": 1.3095809999999801
         },
         {
           "name": "serialized, abortable polling polls status every 10s and economy every 60s without overlapping any request",
           "status": "passed",
-          "durationMs": 37.834788
+          "durationMs": 68.38352400000002
         },
         {
           "name": "serialized, abortable polling backs off, respects Retry-After even on manual retry, then recovers",
           "status": "passed",
-          "durationMs": 2.7704819999999586
+          "durationMs": 3.0035060000000158
         },
         {
           "name": "serialized, abortable polling suspends hidden work and ignores late responses even when a transport ignores abort",
           "status": "passed",
-          "durationMs": 1.4874699999999734
+          "durationMs": 6.88208800000001
         },
         {
           "name": "serialized, abortable polling times out a stalled response body as well as response headers",
           "status": "passed",
-          "durationMs": 1.2060460000000148
+          "durationMs": 1.441408000000024
         },
         {
           "name": "serialized, abortable polling times out a hanging request and does not falsely mark it successful",
           "status": "passed",
-          "durationMs": 0.9983270000000175
+          "durationMs": 1.0267029999999977
+        },
+        {
+          "name": "serialized, abortable polling turns transport failures into an actionable message and recovers on retry",
+          "status": "passed",
+          "durationMs": 3.682089000000019
         }
       ]
     },
@@ -100,42 +115,42 @@
         {
           "name": "safe archive reproducibility pins a real safe positive-work transaction and identical puzzle/budget on two devices",
           "status": "passed",
-          "durationMs": 6.732759999999985
+          "durationMs": 9.247077999999988
         },
         {
           "name": "safe archive reproducibility never assumes contiguous rounds; filters idle, pending, invalid and duplicate entries",
           "status": "passed",
-          "durationMs": 0.6664490000000001
+          "durationMs": 0.8305349999999976
         },
         {
           "name": "safe archive reproducibility rejects a mismatched installation or chain; never invents explorer links",
           "status": "passed",
-          "durationMs": 1.4272679999999696
+          "durationMs": 2.992005000000006
         },
         {
           "name": "safe archive reproducibility bounds the actual work-based energy budget without unsafe number conversion",
           "status": "passed",
-          "durationMs": 0.3911669999999958
+          "durationMs": 0.6772669999999721
         },
         {
           "name": "safe archive reproducibility rejects incomplete and non-safe source fields",
           "status": "passed",
-          "durationMs": 1.1119359999999574
+          "durationMs": 2.336987000000022
         },
         {
           "name": "local progress with graceful storage failure restores the exact garden and pauses active play on reload",
           "status": "passed",
-          "durationMs": 4.851310999999953
+          "durationMs": 12.144106000000022
         },
         {
           "name": "local progress with graceful storage failure discards corrupt progress and reports inaccessible storage",
           "status": "passed",
-          "durationMs": 1.6249149999999872
+          "durationMs": 2.7429650000000265
         },
         {
           "name": "local progress with graceful storage failure preserves live high-water marks through reload and requires rebaselining",
           "status": "passed",
-          "durationMs": 1.0954020000000355
+          "durationMs": 1.2756559999999695
         }
       ]
     },
@@ -146,52 +161,52 @@
         {
           "name": "connected-solution generator retains stable unsigned hashing and rotation primitives",
           "status": "passed",
-          "durationMs": 2.9650040000000217
+          "durationMs": 3.2771189999999706
         },
         {
           "name": "connected-solution generator makes 3000 deterministic solvable 6×6 boards within budget, with four leaves and all tile types",
           "status": "passed",
-          "durationMs": 1323.6250610000002
+          "durationMs": 3156.539564
         },
         {
           "name": "connected-solution generator completes 100 full three-board games using only legal clockwise rotations",
           "status": "passed",
-          "durationMs": 37.16846199999986
+          "durationMs": 144.71900800000003
         },
         {
           "name": "real gameplay states and budgets selects without rotating; blocks fixed cells and paused input",
           "status": "passed",
-          "durationMs": 0.5952620000000479
+          "durationMs": 3.367276999999831
         },
         {
           "name": "real gameplay states and budgets loses at the move cap and restarts exact initial source, clock and budget",
           "status": "passed",
-          "durationMs": 0.8437840000001415
+          "durationMs": 1.377215999999862
         },
         {
           "name": "real gameplay states and budgets loses on the shared three-minute clock; cannot rotate after loss",
           "status": "passed",
-          "durationMs": 0.2626829999999245
+          "durationMs": 0.4642479999997704
         },
         {
           "name": "real gameplay states and budgets spends one charge only on a routed beacon, never twice on the same flower",
           "status": "passed",
-          "durationMs": 0.32771200000001954
+          "durationMs": 1.7198589999998148
         },
         {
           "name": "real gameplay states and budgets pins boards until explicit advancement; only the next live board uses a new round key",
           "status": "passed",
-          "durationMs": 0.4529899999999998
+          "durationMs": 1.7030870000003233
         },
         {
           "name": "real gameplay states and budgets resets combo when a rotation connects a new flower but disconnects old ones; reconnects cannot farm points",
           "status": "passed",
-          "durationMs": 0.9514360000000579
+          "durationMs": 3.2931049999997413
         },
         {
           "name": "real gameplay states and budgets keeps deterministic fixture stable",
           "status": "passed",
-          "durationMs": 2.32763900000009
+          "durationMs": 8.419280999999955
         }
       ]
     }

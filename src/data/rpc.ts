@@ -50,7 +50,7 @@ export function createPoller(options: { onChange: (feed: Feed) => void; fetcher?
     } catch (error) {
       if (token !== generation || !active) return;
       failures[endpoint]++;
-      state = { ...state, loading: false, errors: { ...state.errors, [endpoint]: error instanceof Error ? error.message : 'Connection unavailable. Try Demo or retry.' } };
+      state = { ...state, loading: false, errors: { ...state.errors, [endpoint]: error instanceof TypeError ? 'Squeekchain could not be reached. Retry, or practice in Demo.' : error instanceof Error ? error.message : 'Connection unavailable. Try Demo or retry.' } };
       due[endpoint] = Math.max(embargo[endpoint], clock() + Math.min(120_000, intervals[endpoint] * 2 ** Math.min(4, failures[endpoint] - 1)));
     } finally {
       clearTimeout(timeout);

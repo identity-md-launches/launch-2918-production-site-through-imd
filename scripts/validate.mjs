@@ -79,7 +79,8 @@ try {
         const initial = await masks(p); await p.getByRole('button', { name: 'Start garden', exact: true }).focus(); await p.keyboard.press('Enter');
         await p.locator('main .tile:focus').waitFor(); assert(await p.locator(':focus').evaluate(el => el.classList.contains('tile')));
         const index = Number(await p.locator(':focus').getAttribute('data-cell')); await p.keyboard.press('ArrowRight'); assert.equal(Number(await p.locator(':focus').getAttribute('data-cell')), Math.floor(index / 6) * 6 + (index % 6 + 1) % 6);
-        await p.locator(`main [data-cell="${index}"]`).focus(); await p.keyboard.press('Enter'); assert.deepEqual(await masks(p), initial); await p.keyboard.press('r'); assert((await p.getByTestId('moves').innerText()).startsWith('1'));
+        await p.locator(`main [data-cell="${index}"]`).focus(); await p.keyboard.press('Enter'); assert.deepEqual(await masks(p), initial); await p.keyboard.press('r'); assert((await p.getByTestId('moves').innerText()).startsWith('0'));
+        await p.locator('main [data-kind="conduit"]').first().focus(); await p.keyboard.press('Enter'); await p.keyboard.press('r'); assert((await p.getByTestId('moves').innerText()).startsWith('1'));
         await p.getByRole('button', { name: 'Pause', exact: true }).click(); assert.equal(await p.locator('main .garden-board [tabindex="0"]').count(), 0); const pausedTimer = await p.getByTestId('timer').innerText();
         await p.clock.install(); await p.clock.fastForward(10000); assert.equal(await p.getByTestId('timer').innerText(), pausedTimer);
         await p.getByRole('button', { name: 'Resume garden', exact: true }).first().click();
@@ -192,8 +193,8 @@ try {
         await p.getByRole('button', { name: 'Play again', exact: true }).click(); assert.equal(await p.getByTestId('timer').innerText(), '3:00');
         await p.evaluate(() => { const key = 'squeek-signal-garden.v1'; const saved = JSON.parse(localStorage.getItem(key)); saved.bests = { demo: 3456, archive: 1234, live: 567 }; localStorage.setItem(key, JSON.stringify(saved)); });
         await p.reload(); assert((await p.locator('.run-extras').innerText()).includes('3,456'));
-        await p.getByRole('button', { name: 'Round Challenge', exact: true }).click(); await p.getByRole('button', { name: 'Start garden', exact: true }).waitFor(); assert((await p.locator('.run-extras').innerText()).includes('1,234'));
-        await p.close(); return 'Virtual clock reaches genuine 0:00 loss and restart; sound starts off, enables only on click and toggles off; mode bests read distinct local keys.';
+        await p.getByRole('button', { name: 'Round Challenge', exact: true }).click(); await p.getByRole('button', { name: 'Start garden', exact: true }).waitFor(); assert((await p.locator('.run-extras').innerText()).includes('Local best 0'));
+        await p.close(); return 'Virtual clock reaches genuine 0:00 loss and restart; sound starts off, enables only on click and toggles off; Demo best reads its mode key; an unplayed archive does not inherit the mode-wide best.';
       });
       await check(`${name}: same-browser overlay follows real live progress without duplicate charge accounting`, async () => {
         const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
@@ -214,6 +215,131 @@ try {
         assert.equal(await follower.getByRole('dialog').count(), 0);
         const stored = await controller.evaluate(() => JSON.parse(localStorage.getItem('squeek-signal-garden.v1'))); assert.equal(stored.run.charges, 2);
         await context.close(); return 'Separate pages in one browser share actual live board, bloom and 3→2 charge spend; display-only overlay neither awards energy nor overwrites controller storage.';
+      });
+      await check(`${name}: IDLE core with moving wheel is live on every surface`, async () => {
+        const p = await page({ viewport: { width: 1440, height: 900 } }); await p.clock.install({ time: new Date(fixtures.NOW) });
+        await mock(p, { status: () => ({ ...fixtures.statusJSON, measurement: { ...fixtures.statusJSON.measurement, coreStatus: 'IDLE', rpmMilli: 66053, speedMmPerSecond: 967 } }) });
+        await p.goto(preview.url + '?mode=live'); await p.getByRole('button', { name: 'Start garden', exact: true }).waitFor();
+        assert((await p.locator('.source-line').innerText()).includes('Live Garden · live'));
+        assert((await p.locator('.wheel-scene').innerText()).includes('The wheel is turning.'));
+        assert((await p.locator('.wheel-illustration').getAttribute('aria-label')).includes('live wheel movement detected'));
+        assert((await p.locator('.source-details').innerText()).includes('Live'));
+        await p.goto(preview.url + '?mode=live&overlay=1&controls=0'); await p.getByText(/Live Garden · live/).waitFor();
+        assert(!(await p.locator('.wheel-scene').innerText()).includes('resting'));
+        await p.close(); return 'Explicit moving IDLE-core fixture (66.053 rpm, 967 mm/s): Live badge, wheel heading, accessible name, details and overlay all report live.';
+      });
+      await check(`${name}: hidden interval preserves pending baseline and grants no gap energy`, async () => {
+        const p = await page({ viewport: { width: 1440, height: 900 } }); await p.clock.install({ time: new Date(fixtures.NOW) });
+        let mm = 0, statuses = 0;
+        await p.route(apiPattern, async r => {
+          const iso = await p.evaluate(() => new Date().toISOString()), path = new URL(r.request().url()).pathname;
+          if (path.endsWith('/status')) statuses++;
+          const json = path.includes('economy') ? { ...fixtures.economyJSON, generatedAt: iso } : path.includes('settlements') ? { ...fixtures.archiveJSON, generatedAt: iso } : { ...fixtures.statusJSON, generatedAt: iso, measurement: { ...fixtures.statusJSON.measurement, observedAt: iso, distanceMm: 4500000 + mm, cumulativeWorkUnits: String(90000 + Math.floor(mm / 900)) } };
+          await r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(json) });
+        });
+        await p.goto(preview.url + '?mode=live'); await p.getByRole('button', { name: 'Start garden', exact: true }).click();
+        await p.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, value: true }); document.dispatchEvent(new Event('visibilitychange')); });
+        await p.getByRole('button', { name: 'Resume garden', exact: true }).waitFor();
+        const hiddenCalls = statuses; await p.clock.fastForward(30000);
+        assert.equal(statuses, hiddenCalls); assert((await p.locator('.source-details').innerText()).includes('Tab was hidden'));
+        assert((await p.locator('.aside-title').innerText()).includes('0 / 3'));
+        mm = 27000;
+        await p.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, value: false }); document.dispatchEvent(new Event('visibilitychange')); });
+        await p.waitForFunction(() => document.querySelector('.source-details')?.textContent.includes('Reconnected and rebaselined'));
+        assert((await p.locator('.aside-title').innerText()).includes('0 / 3'));
+        await p.getByRole('button', { name: 'Resume garden', exact: true }).click();
+        mm = 28500; await p.clock.fastForward(10001);
+        await p.waitForFunction(() => document.querySelector('.aside-title')?.textContent.includes('1 / 3'));
+        assert.equal(await p.getByTestId('moves').innerText().then(t => t.split(' / ')[0]), '0');
+        await p.close(); return '30 virtual hidden seconds: zero requests, hidden explanation retained; +27,000 mm on return grants 0; subsequent +1,500 mm grants exactly 1. No moves spent.';
+      });
+      await check(`${name}: pause, loading and failure covers sit above selected and focused tiles`, async () => {
+        const p = await page({ viewport: { width: 390, height: 844 } }); await mock(p); await loadDemo(p);
+        await p.getByRole('button', { name: 'Start garden', exact: true }).click(); await p.locator('main [data-cell="14"]').click();
+        await p.getByRole('button', { name: 'Pause', exact: true }).click();
+        const covered = async cell => p.locator(`main [data-cell="${cell}"]`).evaluate(el => { const r = el.getBoundingClientRect(); return !!document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest('.board-cover'); });
+        assert(await covered(14)); await shot(p, 'revision-pause-390.png', false);
+        await p.close();
+        for (const state of ['loading', 'failed']) {
+          const q = await page({ viewport: { width: 390, height: 844 } });
+          await q.route(apiPattern, state === 'loading' ? () => {} : r => r.abort()); await q.goto(preview.url);
+          await q.getByRole('button', { name: state === 'loading' ? 'Play Demo' : 'Retry source', exact: true }).waitFor();
+          const hit = await q.locator('main .tile.selected').evaluate(el => { const r = el.getBoundingClientRect(); return !!document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest('.board-cover'); });
+          assert(hit); assert.equal(await q.locator('main .garden-board [tabindex="0"]').count(), 0); await q.close();
+        }
+        return '390×844 hit-testing confirms pause/loading/error covers above selected tiles; covered boards have no tile tab stop.';
+      });
+      await check(`${name}: source loading and failure copy never imply a settled practice source`, async () => {
+        const p = await page({ viewport: { width: 390, height: 844 } }); await p.route(apiPattern, () => {}); await p.goto(preview.url);
+        await p.locator('.board-cover').waitFor(); const details = await p.locator('.source-details').innerText();
+        assert(details.includes('Waiting for a settled round')); assert(details.includes('Not loaded'));
+        assert(!details.includes('Offline practice') && !details.includes('Fixed practice fixture') && !details.includes('API-safe settlement'));
+        assert.equal(await p.locator('.wheel-scene h2').innerText(), 'Checking the wheel'); assert.equal(await p.locator('.wheel-scene p').count(), 0);
+        assert(details.includes('Unavailable')); await p.close();
+        return 'Pending archive uses Waiting for a settled round / Not loaded / Unavailable; Checking the wheel has no false failure paragraph or resting accessible name.';
+      });
+      await check(`${name}: outage recovery stays in the first-screen board cover`, async () => {
+        const p = await page({ viewport: { width: 390, height: 664 } }); let connected = false;
+        await p.route(apiPattern, r => {
+          if (!connected) return r.abort(); const path = new URL(r.request().url()).pathname;
+          const json = path.includes('economy') ? fixtures.economyJSON : path.includes('settlements') ? fixtures.archiveJSON : fixtures.statusJSON;
+          return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(json) });
+        });
+        await p.goto(preview.url); const retry = p.getByRole('button', { name: 'Retry source', exact: true }); await retry.waitFor();
+        assert((await p.locator('.board-cover').innerText()).includes('Squeekchain could not be reached. Retry, or practice in Demo.'));
+        assert(!(await p.locator('.source-details').innerText()).includes('Offline practice'));
+        assert.equal(await p.locator('.source-error').count(), 0); const box = await retry.boundingBox(); assert(box.y >= 0 && box.y + box.height <= 664);
+        await shot(p, 'revision-outage-390x664.png', false); connected = true; await retry.click(); await p.getByRole('button', { name: 'Start garden', exact: true }).waitFor();
+        assert.equal(await p.locator('.board-cover').count(), 0); assert((await p.locator('.source-line').innerText()).includes('Historical round'));
+        await p.close(); return 'Blocked transport yields actionable cover message, visible Retry and explicit Play Demo at 390×664; Retry loads real-shaped historical fixture, removing cover and duplicate error block.';
+      });
+      await check(`${name}: browser modifier shortcuts spend no rotations and remain uncancelled`, async () => {
+        const p = await page({ viewport: { width: 1440, height: 900 } }); await offline(p); await loadDemo(p); await p.getByRole('button', { name: 'Start garden', exact: true }).click();
+        assert.equal(await p.locator('main .tile.selected').getAttribute('data-kind'), 'source'); assert(await p.getByRole('button', { name: /^Rotate/ }).isDisabled());
+        await p.locator('main [data-kind="conduit"]').first().click();
+        for (const target of ['main .tile.selected', '.game-controls .primary']) for (const modifier of ['ctrlKey', 'metaKey', 'altKey']) {
+          const prevented = await p.locator(target).evaluate((el, mod) => { const e = new KeyboardEvent('keydown', { key: 'r', [mod]: true, bubbles: true, cancelable: true }); el.dispatchEvent(e); return e.defaultPrevented; }, modifier);
+          assert.equal(prevented, false); assert((await p.getByTestId('moves').innerText()).startsWith('0 /'));
+        }
+        await p.locator('main .tile.selected').focus(); await p.keyboard.press('r'); assert((await p.getByTestId('moves').innerText()).startsWith('1 /'));
+        await p.getByRole('button', { name: /^Rotate/ }).focus(); await p.keyboard.press('R'); assert((await p.getByTestId('moves').innerText()).startsWith('2 /'));
+        await p.close(); return 'Ctrl/Meta/Alt+R on board and action row: not prevented, 0 moves. Plain r and Shift+R still rotate. Initial selection is wheel with Rotate disabled.';
+      });
+      await check(`${name}: short phone/laptop first screens and clean 720p/1080p overlays`, async () => {
+        const measured = [];
+        for (const [width, height] of [[390, 664], [390, 844], [1440, 780], [1440, 900]]) {
+          const p = await page({ viewport: { width, height } }); await mock(p); await p.goto(preview.url); await p.getByRole('button', { name: 'Start garden', exact: true }).waitFor(); await p.evaluate(() => document.fonts.ready);
+          const start = await p.getByRole('button', { name: 'Start garden', exact: true }).boundingBox(); const garden = await p.locator('.board-scene').boundingBox();
+          assert(start.y >= 0 && start.y + start.height <= height, JSON.stringify({ width, height, start, garden })); await noOverflow(p);
+          await p.getByRole('button', { name: 'Start garden', exact: true }).click(); await p.locator('main [data-kind="conduit"]').first().click();
+          const rotate = await p.getByRole('button', { name: /^Rotate/ }).boundingBox(); assert(rotate.y + rotate.height <= height);
+          measured.push({ width, height, startBottom: start.y + start.height, boardBottom: garden.y + garden.height, rotateBottom: rotate.y + rotate.height });
+          if (height === 664 || height === 780) await shot(p, `revision-ready-${width}x${height}.png`, false); await p.close();
+        }
+        for (const [width, height] of [[1280, 720], [1920, 1080]]) {
+          const p = await page({ viewport: { width, height } }); await mock(p); await p.goto(preview.url + '?overlay=1&controls=0'); await p.locator('.source-details a').waitFor(); await p.evaluate(() => document.fonts.ready);
+          await p.mouse.move(-1, -1); await p.waitForFunction(() => getComputedStyle(document.querySelector('.overlay-toggle')).opacity === '0');
+          const size = await p.evaluate(() => ({ height: innerHeight, scrollHeight: document.documentElement.scrollHeight })); assert.equal(size.scrollHeight, height);
+          for (const selector of ['.brand', '.source-details a']) { const r = await p.locator(selector).boundingBox(); assert(r.y >= 0 && r.y + r.height <= height, JSON.stringify({ width, height, selector, r })); }
+          await shot(p, `revision-overlay-${width}.png`, false);
+          await p.locator('.overlay-toggle').focus(); await p.waitForFunction(() => Number(getComputedStyle(document.querySelector('.overlay-toggle')).opacity) > 0);
+          await p.keyboard.press('Enter'); await p.getByRole('button', { name: 'Start garden', exact: true }).waitFor();
+          measured.push({ width, height, overlayScrollHeight: size.scrollHeight, toggleHiddenUntilFocus: true }); await p.close();
+        }
+        return measured;
+      });
+      await check(`${name}: historical personal best belongs to the pinned round`, async () => {
+        const another = { ...fixtures.settlementJSON, transactionHash: '0x' + 'b'.repeat(64), settledThroughRound: '1201', workAdded: '99' };
+        const p = await page({ viewport: { width: 1440, height: 900 } }); await mock(p, { archive: () => ({ ...fixtures.archiveJSON, recentSettlements: [fixtures.settlementJSON, another] }) }); await p.goto(preview.url);
+        await p.getByRole('button', { name: 'Start garden', exact: true }).click(); const key = `signal-garden/v1|archive|11155111|${fixtures.settlementJSON.transactionHash}|1214`;
+        for (let stage = 0; stage < 3; stage++) { await clearBoard(p, key, stage); await p.getByRole('button', { name: stage === 2 ? 'Finish the garden' : 'Next garden', exact: true }).click(); }
+        await p.getByRole('heading', { name: 'The night is in bloom.' }).waitFor(); const score = Number(await p.getByTestId('score').innerText());
+        assert((await p.getByRole('dialog').innerText()).includes(`local best ${score}`)); await p.getByRole('button', { name: 'Close dialog' }).click();
+        await p.getByRole('button', { name: 'Change round', exact: true }).click(); await p.getByRole('button', { name: /Round 1201/ }).click();
+        assert((await p.locator('.run-extras').innerText()).includes('Local best 0'));
+        await p.getByRole('button', { name: 'Change round', exact: true }).click(); await p.getByRole('button', { name: /Round 1214/ }).click();
+        assert((await p.locator('.run-extras').innerText()).includes(score.toLocaleString('en'))); await p.close();
+        return { wonRound: '1214', score, unplayedRound: '1201', unplayedBest: 0, returningToWonRoundRestoresBest: true };
       });
       await check(`${name}: actual public APIs and production screenshots`, async () => {
         const p = await page({ viewport: { width: 1440, height: 1000 } }); const errors = [], missing = []; p.on('pageerror', e => errors.push(e.message)); p.on('response', r => { if (r.url().startsWith(preview.url) && r.status() >= 400) missing.push(r.url()); });

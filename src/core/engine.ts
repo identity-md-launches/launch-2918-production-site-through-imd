@@ -102,7 +102,7 @@ export function routed(run: Pick<Run, 'tiles' | 'puzzle'>): number[] {
 }
 export function createRun(source: Source): Run {
   const puzzle = createPuzzle(source.key, 0);
-  return { version: 1, source, puzzle, tiles: puzzle.tiles.map(t => ({ ...t })), phase: 'ready', stage: 0, moves: 0, score: 0, streak: 0, combo: 1, awarded: [], boosted: [], charges: source.budget, remainingMs: DURATION, selected: puzzle.tiles.findIndex(t => t.kind === 'conduit' && t.mask !== t.solution), boardRound: source.round, completed: 0, lossReason: '' };
+  return { version: 1, source, puzzle, tiles: puzzle.tiles.map(t => ({ ...t })), phase: 'ready', stage: 0, moves: 0, score: 0, streak: 0, combo: 1, awarded: [], boosted: [], charges: source.budget, remainingMs: DURATION, selected: puzzle.source, boardRound: source.round, completed: 0, lossReason: '' };
 }
 export type Action = { type: 'start' | 'pause' | 'resume' | 'restart' | 'boost' } | { type: 'select'; index: number } | { type: 'rotate' } | { type: 'tick'; elapsed: number } | { type: 'charges'; value: number } | { type: 'next'; key?: string; round?: string };
 export function gameReducer(run: Run, action: Action): Run {
@@ -125,7 +125,7 @@ export function gameReducer(run: Run, action: Action): Run {
     if (run.phase !== 'bloom') return run;
     if (run.stage === 2) return { ...run, phase: 'won', score: run.score + Math.floor(run.remainingMs / 1000) * 2 };
     const stage = run.stage + 1, key = action.key ?? (run.source.mode === 'live' ? run.puzzle.key : run.source.key), puzzle = createPuzzle(key, stage);
-    return { ...run, boardRound: action.round ?? (run.source.mode === 'live' ? run.boardRound : run.source.round), puzzle, tiles: puzzle.tiles.map(t => ({ ...t })), stage, phase: 'playing', moves: 0, awarded: [], boosted: [], selected: puzzle.tiles.findIndex(t => t.kind === 'conduit' && t.mask !== t.solution) };
+    return { ...run, boardRound: action.round ?? (run.source.mode === 'live' ? run.boardRound : run.source.round), puzzle, tiles: puzzle.tiles.map(t => ({ ...t })), stage, phase: 'playing', moves: 0, awarded: [], boosted: [], selected: puzzle.source };
   }
   if (run.phase !== 'playing' || run.tiles[run.selected].kind !== 'conduit') return run;
   const tiles = run.tiles.map((t, i) => i === run.selected ? { ...t, mask: rotateMask(t.mask) } : t);

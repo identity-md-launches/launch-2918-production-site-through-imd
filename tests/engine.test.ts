@@ -37,6 +37,8 @@ describe('connected-solution generator', () => {
     for (let seed = 0; seed < 100; seed++) {
       let r = gameReducer(createRun({ ...DEMO_SOURCE, key: `run:${seed}` }), { type: 'start' });
       for (let stage = 0; stage < 3; stage++) {
+        expect(r.selected).toBe(r.puzzle.source);
+        expect(gameReducer(r, { type: 'rotate' })).toEqual(r);
         for (const index of solutionSteps(r)) {
           if (r.phase === 'bloom') break;
           r = gameReducer(r, { type: 'select', index }); r = gameReducer(r, { type: 'rotate' });

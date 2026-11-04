@@ -57,19 +57,20 @@ Headings use 1.1–1.25 line-height and balanced wrapping. Body uses 1.6; modal 
 Spacing reference tokens are **4, 8, 12, 16, 24 and 32px** (`--space-1` through `--space-8`); component declarations use that rhythm plus geometry-specific board gaps/insets. Structural edges align the title, mode control, stats, board and action row.
 
 - Roomy desktop: `.app` max 1200px, 40px inline padding; `.main-layout` has up to 650px game + 310px source column, 72px gap.
-- Desktop with height ≤1020px: a compact 490px game + 290px aside, 64px gap, 76px header and smaller title. This keeps the full game and action row visible at the checked desktop size.
+- Desktop with height ≤1020px: game width `min(490px, 100vh - 410px)` + up to 290px aside, 64px gap, 76px header and smaller title. This keeps the board and Start/Rotate visible at both checked laptop heights, 780px and 900px.
 - Width ≤1080px: 28px page inset, compact brand/title and narrower columns.
 - Width ≤760px: one column, max 620px page; 20px inset, 82px header, game first, source details below. At 390×844 the complete board and main Start action are visible on the first screen. The remaining charge count is also shown on Grow.
+- Width ≤760px and height ≤760px: 56px header, compact mode-tab padding, visually hidden intro (including the retained accessible h1). The brand still identifies the product. At 390×664 the complete board ends at 599px and Start/Rotate ends at 657px.
 - Width ≤365px: 12px inset and tighter utility spacing; the six-column board still reflows without horizontal scroll.
 - The 6×6 board has square cells, 6px desktop / 5px phone gaps, and no drag surface. Metadata and source labels wrap. Statistics use auto-fit columns, and mode labels can wrap under text enlargement.
 
-Actual production browser widths checked: 320, 390, 620, 760, 900 and 1440, plus a 1920×1080 overlay. Horizontal overflow was absent. Root text enlargement to 200% at 390 also reflowed; this was not native browser zoom. English is the only implemented locale; RTL and a translated version were not tested or claimed.
+Actual production browser widths checked: 320, 390, 620, 760, 900 and 1440, including 390×664 and 1440×780, plus 1280×720 and 1920×1080 overlays. Horizontal overflow was absent. Both overlay document heights equal their viewport heights. Root text enlargement to 200% at 390 also reflowed; this was not native browser zoom. English is the only implemented locale; RTL and a translated version were not tested or claimed.
 
 ## Elevation & depth
 
 Tonal layers establish depth: night page, indigo bed, conduit tiles and warmer powered backings. There are no card shadows or nested card stacks. Sparse separators organize the aside; control borders communicate interaction, selection outlines communicate state. A subtle nontext radial atmosphere sits behind the game.
 
-Native dialogs use an opaque surface with one border, a dark translucent backdrop and 5px backdrop blur. The page behind them is made inert by `showModal()`. Dialogs scroll within 90dvh. Focus/selection perimeters sit above tiles; the overlay's Show/Hide control remains accessible in a fixed corner on desktop and in normal flow on narrow screens.
+Native dialogs use an opaque surface with one border, a dark translucent backdrop and 5px backdrop blur. The page behind them is made inert by `showModal()`. Dialogs scroll within 90dvh. Selected tiles use z-index 1, focused/tutorial tiles 2, and board covers 3, so paused/loading/error copy stays above the entire board. The overlay's Show/Hide control remains accessible in a fixed corner on desktop and in normal flow on narrow screens. With controls hidden it is transparent until scene hover or keyboard focus.
 
 ## Shapes
 
@@ -79,15 +80,15 @@ Conduit/button radii are 9px desktop; board bed radius 20px with 16px normal ins
 
 | Component / pattern | Source | Behavior and states |
 | --- | --- | --- |
-| `Board` | `src/components/Board.tsx` | Native button cells with one roving tab stop; arrows focus, Enter selects, R rotates selected conduit. Selected coordinate, powered leaf/ports, blocked stone, checked beacon and charged bloom are distinct. Disabled/covered boards remove cell tab stops. |
+| `Board` | `src/components/Board.tsx` | Native button cells with one roving tab stop; arrows focus, Enter selects, R rotates selected conduit. Ctrl/Meta/Alt+R retain their browser behavior. New boards select the fixed wheel, so players choose their first conduit. Selected coordinate, powered leaf/ports, blocked stone, checked beacon and charged bloom are distinct. Disabled/covered boards remove cell tab stops. |
 | `tileArt`, `flowerArt`, `wheelArt` | `src/components/art.ts` | Shared original vector drawing used by board and PNG. `powered` / `boosted` are visual parameters; the engine determines them. |
 | `Modal` | `src/components/Modal.tsx` | Native `<dialog>`, title, close button, Escape/backdrop close, visible keyboard focus, trap over actual tabbable controls only, focus return. `wide` expands instructional content. |
 | `Tutorial` | `src/components/Tutorial.tsx` | Separate fixed Demo lesson using the same engine/board. Dashed target, four interactive steps, one primary action per step. |
 | `.primary` / `.icon-button` / `.text-button` | `src/styles/app.css` | Warm filled primary, neutral outlined utilities, consistent text disclosure; hover, visible focus, pressed and disabled states. Core controls are at least 44px high; some small utilities are 36px with spacing. |
 | `.mode-tabs` | `src/App.tsx`, CSS | Three native pressed-state buttons, underline and explicit mode text. Active play requests confirmation before a mode change. |
 | `.score-strip`, `.run-extras` | `src/App.tsx`, CSS | Stable tabular values and quiet labels; game values precede the board, streak/combo/local best follow controls. |
-| `.reservoir`, `.source-details` | `src/App.tsx`, CSS | Three visible slots plus textual count, exact charge mapping, real network/time and source-state disclosures. Unavailable and empty states offer retry and explicit Demo. |
-| `.overlay-app.controls-hidden` | `src/App.tsx`, CSS | Actual 16:9 game scene at a static query URL. Keeps garden, mode/round/freshness, source and reservoir; hides ordinary controls until requested. Same-profile storage following is display-only; a standalone game continues while controls are hidden. |
+| `.reservoir`, `.source-details` | `src/App.tsx`, CSS | Three visible slots plus textual count, exact charge mapping, real network/time and source-state disclosures. Unloaded sources say Waiting / Not loaded; fixture wording belongs to Demo. Fresh wheel motion is live regardless of core lifecycle status. Cold-load failures put retry and explicit Demo on the board cover. |
+| `.overlay-app.controls-hidden` | `src/App.tsx`, CSS | Actual 16:9 game scene at a static query URL. Keeps garden, mode/round/freshness, source and reservoir; hides ordinary controls until requested by hover/focus. At desktop heights ≤800px, two supporting paragraphs are omitted to fit 720p while retaining mapping, network and transaction link. Same-profile storage following is display-only; a standalone game continues while controls are hidden. |
 | PNG / share pattern | `src/data/export.ts`, `src/App.tsx` | Actual current-state PNG download, copied overlay URL, labelled manual-copy textarea on denial, explicit errors and progress. |
 
 High-frequency transitions are **120ms**, naming background/color/opacity/scale only. Primary/icon press scales to **.96**. A one-time flower arrival lasts 400ms after restoration. All motion is opt-in through `prefers-reduced-motion: no-preference`; there is no endless animation or `transition: all`. Pausing does not trap focus behind the board cover. Reduced motion was exercised; animation-panel replay at 10% speed was not performed.

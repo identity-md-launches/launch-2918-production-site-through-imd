@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-04T02:15:52.024Z",
+  "generatedAt": "2026-11-04T02:59:38.143Z",
   "target": "production dist/ at /preview/ subpath",
   "checks": [
     {
@@ -15,12 +15,12 @@
     {
       "name": "chromium: full three-garden win, growth spending, best, PNG, overlay URL fallback",
       "passed": true,
-      "evidence": "All 3 boards won via UI; charge spent once for +150; Demo best persisted; real 1200\u00d7675 PNG downloaded; denied clipboard exposes complete manual-copy URL."
+      "evidence": "All 3 boards won via UI; charge spent once for +150; Demo best persisted; real 1200×675 PNG downloaded; denied clipboard exposes complete manual-copy URL."
     },
     {
       "name": "chromium: complete mobile touch win, genuine move-loss, restart and first screen",
       "passed": true,
-      "evidence": "390\u00d7844 main action fully visible; full 3-board win by taps without dragging; actual loss at 11 moves; Play again resets game."
+      "evidence": "390×844 main action fully visible; full 3-board win by taps without dragging; actual loss at 11 moves; Play again resets game."
     },
     {
       "name": "chromium: idle Live Garden, repeats, energy cap, epoch/reconnect and next-board seed",
@@ -40,7 +40,7 @@
     {
       "name": "chromium: real 16:9 overlay, controls toggle and source-dependent board",
       "passed": true,
-      "evidence": "1920\u00d71080 overlay is exactly 16:9, source/mode/freshness retained; same actual engine; Show/Hide controls and real rotation work; a standalone hidden-controls game continues its actual clock."
+      "evidence": "1920×1080 overlay is exactly 16:9, source/mode/freshness retained; same actual engine; Show/Hide controls and real rotation work; a standalone hidden-controls game continues its actual clock."
     },
     {
       "name": "chromium: responsive reflow, reduced motion, accessibility, contrast and focus",
@@ -93,19 +93,106 @@
     {
       "name": "chromium: timer expiry, sound toggle and separate local mode bests",
       "passed": true,
-      "evidence": "Virtual clock reaches genuine 0:00 loss and restart; sound starts off, enables only on click and toggles off; mode bests read distinct local keys."
+      "evidence": "Virtual clock reaches genuine 0:00 loss and restart; sound starts off, enables only on click and toggles off; Demo best reads its mode key; an unplayed archive does not inherit the mode-wide best."
     },
     {
       "name": "chromium: same-browser overlay follows real live progress without duplicate charge accounting",
       "passed": true,
-      "evidence": "Separate pages in one browser share actual live board, bloom and 3\u21922 charge spend; display-only overlay neither awards energy nor overwrites controller storage."
+      "evidence": "Separate pages in one browser share actual live board, bloom and 3→2 charge spend; display-only overlay neither awards energy nor overwrites controller storage."
+    },
+    {
+      "name": "chromium: IDLE core with moving wheel is live on every surface",
+      "passed": true,
+      "evidence": "Explicit moving IDLE-core fixture (66.053 rpm, 967 mm/s): Live badge, wheel heading, accessible name, details and overlay all report live."
+    },
+    {
+      "name": "chromium: hidden interval preserves pending baseline and grants no gap energy",
+      "passed": true,
+      "evidence": "30 virtual hidden seconds: zero requests, hidden explanation retained; +27,000 mm on return grants 0; subsequent +1,500 mm grants exactly 1. No moves spent."
+    },
+    {
+      "name": "chromium: pause, loading and failure covers sit above selected and focused tiles",
+      "passed": true,
+      "evidence": "390×844 hit-testing confirms pause/loading/error covers above selected tiles; covered boards have no tile tab stop."
+    },
+    {
+      "name": "chromium: source loading and failure copy never imply a settled practice source",
+      "passed": true,
+      "evidence": "Pending archive uses Waiting for a settled round / Not loaded / Unavailable; Checking the wheel has no false failure paragraph or resting accessible name."
+    },
+    {
+      "name": "chromium: outage recovery stays in the first-screen board cover",
+      "passed": true,
+      "evidence": "Blocked transport yields actionable cover message, visible Retry and explicit Play Demo at 390×664; Retry loads real-shaped historical fixture, removing cover and duplicate error block."
+    },
+    {
+      "name": "chromium: browser modifier shortcuts spend no rotations and remain uncancelled",
+      "passed": true,
+      "evidence": "Ctrl/Meta/Alt+R on board and action row: not prevented, 0 moves. Plain r and Shift+R still rotate. Initial selection is wheel with Rotate disabled."
+    },
+    {
+      "name": "chromium: short phone/laptop first screens and clean 720p/1080p overlays",
+      "passed": true,
+      "evidence": [
+        {
+          "width": 390,
+          "height": 664,
+          "startBottom": 657,
+          "boardBottom": 599,
+          "rotateBottom": 657
+        },
+        {
+          "width": 390,
+          "height": 844,
+          "startBottom": 800.375,
+          "boardBottom": 742.375,
+          "rotateBottom": 800.375
+        },
+        {
+          "width": 1440,
+          "height": 780,
+          "startBottom": 777.578125,
+          "boardBottom": 717.578125,
+          "rotateBottom": 777.578125
+        },
+        {
+          "width": 1440,
+          "height": 900,
+          "startBottom": 897.578125,
+          "boardBottom": 837.578125,
+          "rotateBottom": 897.578125
+        },
+        {
+          "width": 1280,
+          "height": 720,
+          "overlayScrollHeight": 720,
+          "toggleHiddenUntilFocus": true
+        },
+        {
+          "width": 1920,
+          "height": 1080,
+          "overlayScrollHeight": 1080,
+          "toggleHiddenUntilFocus": true
+        }
+      ]
+    },
+    {
+      "name": "chromium: historical personal best belongs to the pinned round",
+      "passed": true,
+      "evidence": {
+        "wonRound": "1214",
+        "score": 3929,
+        "unplayedRound": "1201",
+        "unplayedBest": 0,
+        "returningToWonRoundRestoresBest": true
+      }
     },
     {
       "name": "chromium: actual public APIs and production screenshots",
       "passed": true,
       "evidence": {
-        "modes": "Historical round 1214\nChange round",
-        "source": "A moment from the wheel\nSource\nHistorical \u00b7 API-safe settlement\nNetwork\nSepolia testnet \u00b7 11155111\nSource time\n4 Nov, 00:15 UTC\nWheel now\nIdle \u00b7 baseline power on\nView round transaction\nHow it works",
+        "modes": "Historical round 1230\nChange round",
+        "source": "A moment from the wheel\nSource\nHistorical · API-safe settlement\nNetwork\nSepolia testnet · 11155111\nSource time\n4 Nov, 02:55 UTC\nWheel now\nIdle · baseline power on\nView round transaction\nHow it works",
         "fonts": [
           {
             "family": "DM Sans",
@@ -128,8 +215,6 @@
     }
   ],
   "limitations": [
-    "WebKit could not launch because required system libraries were missing. No WebKit assertions ran.",
-    "Physical phone, screen reader, native browser zoom, real OBS capture, speaker audibility and real-time hamster movement/staleness were not checked."
-  ],
-  "fixtureDisclosure": "Feed edge cases, alternate safe transactions, reproducibility scenarios and virtual-clock checks use explicit mocked APIs. Only the actual-public-API group reads the real services. Demo is always labelled practice."
+    "webkit unavailable: browserType.launch: \n╔══════════════════════════════════════════════════════╗\n║ Host system is missing dependencies to run browsers. ║\n║ Missing libraries:                                   ║\n║     libgtk-4.so.1                                    ║\n║     libpangocairo-1.0.so.0                           ║\n║     libgdk_pixbuf-2.0.so.0                           ║\n║     libcairo-gobject.so.2                            ║\n║     libgraphene-1.0.so.0                             ║\n║     liblcms2.so.2                                    ║\n║     libopus.so.0                                     ║\n║     libgstallocators-1.0.so.0                        ║\n║     libgstapp-1.0.so.0                               ║\n║     libgstpbutils-1.0.so.0                           ║\n║     libgstaudio-1.0.so.0                             ║\n║     libgsttag-1.0.so.0                               ║\n║     libgstvideo-1.0.so.0                             ║\n║     libgstgl-1.0.so.0                                ║\n║     libgstcodecparsers-1.0.so.0                      ║\n║     libgstfft-1.0.so.0                               ║\n║     libflite.so.1                                    ║\n║     libflite_usenglish.so.1                          ║\n║     libflite_cmu_grapheme_lang.so.1                  ║\n║     libflite_cmu_grapheme_lex.so.1                   ║\n║     libflite_cmu_indic_lang.so.1                     ║\n║     libflite_cmu_indic_lex.so.1                      ║\n║     libflite_cmulex.so.1                             ║\n║     libflite_cmu_time_awb.so.1                       ║\n║     libflite_cmu_us_awb.so.1                         ║\n║     libflite_cmu_us_kal16.so.1                       ║\n║     libflite_cmu_us_kal.so.1                         ║\n║     libflite_cmu_us_rms.so.1                         ║\n║     libflite_cmu_us_slt.so.1                         ║\n║     libwebpdemux.so.2                                ║\n║     libavif.so.16                                    ║\n║     libharfbuzz-icu.so.0                             ║\n║     libepoxy.so.0                                    ║\n║     libwebpmux.so.3                                  ║\n║     libwayland-server.so.0                           ║\n║     libwayland-egl.so.1                              ║\n║     libwayland-client.so.0                           ║\n║     libmanette-0.2.so.0                              ║\n║     libenchant-2.so.2                                ║\n║     libsecret-1.so.0                                 ║\n║     libhyphen.so.0                                   ║\n║     libGLESv2.so.2                                   ║\n║     libx264.so                                       ║\n╚══════════════════════════════════════════════════════╝"
+  ]
 }

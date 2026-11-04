@@ -1,0 +1,214 @@
+{
+  "generatedAt": "2026-11-04T02:54:47.172Z",
+  "observations": [
+    {
+      "id": "f9fd387c",
+      "result": {
+        "adapter": "idle",
+        "badge": "Live Garden · idle · round 1221",
+        "wheel": "Small paws, quiet night.\n\nSqueektoshi is resting. The garden is still yours to restore.",
+        "alt": "Original illustration of a hamster resting in a wheel"
+      }
+    },
+    {
+      "id": "8edd3d5b",
+      "result": {
+        "adapterAfterOld": {
+          "needsBaseline": false,
+          "note": "Reconnected and rebaselined. Distance during the gap grants no energy."
+        },
+        "adapterGapCharges": 3,
+        "hiddenPolls": 0,
+        "hiddenNote": "From the real wheel\nSource\nProvisional telemetry\nNetwork\nSepolia testnet · 11155111\nSource time\n4 Nov, 01:20 UTC\nWheel now\nIdle · baseline power on\n\nReconnected and rebaselined. Distance during the gap grants no energy.\n\nHow it works",
+        "reservoir": "Growth reservoir\n3 / 3",
+        "returnedNote": "From the real wheel\nSource\nProvisional telemetry\nNetwork\nSepolia testnet · 11155111\nSource time\n4 Nov, 01:21 UTC\nWheel now\nIdle · baseline power on\n\nNew wheel movement grew bonus energy. Reservoir capped at 3; overflow is discarded.\n\nHow it works",
+        "calls": 2
+      }
+    },
+    {
+      "id": "6dace9d7",
+      "result": {
+        "hit": "tile tile-conduit selected",
+        "tileZ": "1",
+        "coverZ": "auto"
+      }
+    },
+    {
+      "id": "12dd09be",
+      "result": {
+        "source": "A moment from the wheel\nSource\nHistorical · API-safe settlement\nNetwork\nOffline practice\nSource time\nFixed practice fixture\nWheel now\nunavailable\nHow it works",
+        "wheel": "A signal in the dark.\n\nLive data is unavailable or stale. Historical rounds and Demo stay playable."
+      }
+    },
+    {
+      "id": "8232aaf6",
+      "result": {
+        "error": "Failed to fetch\n\nRetry sourcePractice in Demo",
+        "box": {
+          "x": 20,
+          "y": 930.46875,
+          "width": 350,
+          "height": 110.390625
+        },
+        "cover": "Garden preview\nNo safe round loaded\nPlay Demo"
+      }
+    },
+    {
+      "id": "bd76aba3",
+      "result": [
+        {
+          "target": "main .tile.selected",
+          "modifier": "ctrlKey",
+          "prevented": true,
+          "moves": "1 / 11"
+        },
+        {
+          "target": "main .tile.selected",
+          "modifier": "metaKey",
+          "prevented": true,
+          "moves": "2 / 11"
+        },
+        {
+          "target": "main .tile.selected",
+          "modifier": "altKey",
+          "prevented": true,
+          "moves": "3 / 11"
+        },
+        {
+          "target": ".game-controls .primary",
+          "modifier": "ctrlKey",
+          "prevented": true,
+          "moves": "4 / 11"
+        },
+        {
+          "target": ".game-controls .primary",
+          "modifier": "metaKey",
+          "prevented": true,
+          "moves": "5 / 11"
+        },
+        {
+          "target": ".game-controls .primary",
+          "modifier": "altKey",
+          "prevented": true,
+          "moves": "6 / 11"
+        }
+      ]
+    },
+    {
+      "id": "90908dc9",
+      "result": {
+        "height": 720,
+        "scrollHeight": 743,
+        "header": {
+          "x": 60,
+          "y": -10.078125,
+          "width": 242.015625,
+          "height": 34,
+          "top": -10.078125,
+          "right": 302.015625,
+          "bottom": 23.921875,
+          "left": 60
+        },
+        "link": {
+          "x": 737,
+          "y": 712.078125,
+          "width": 300,
+          "height": 17,
+          "top": 712.078125,
+          "right": 1037,
+          "bottom": 729.078125,
+          "left": 737
+        }
+      }
+    },
+    {
+      "id": "1c6c6ed1",
+      "result": {
+        "opacity": "0.6",
+        "label": "Show controls"
+      }
+    },
+    {
+      "id": "aaf0176d",
+      "result": [
+        {
+          "width": 390,
+          "height": 664,
+          "start": {
+            "x": 20,
+            "y": 756.375,
+            "width": 154,
+            "height": 44
+          },
+          "board": {
+            "x": 20,
+            "y": 366.375,
+            "width": 350,
+            "height": 376
+          }
+        },
+        {
+          "width": 1440,
+          "height": 780,
+          "start": {
+            "x": 298,
+            "y": 853.578125,
+            "width": 268,
+            "height": 44
+          },
+          "board": {
+            "x": 298,
+            "y": 322.578125,
+            "width": 490,
+            "height": 515
+          }
+        },
+        {
+          "width": 390,
+          "height": 844,
+          "start": {
+            "x": 20,
+            "y": 756.375,
+            "width": 154,
+            "height": 44
+          },
+          "board": {
+            "x": 20,
+            "y": 366.375,
+            "width": 350,
+            "height": 376
+          }
+        },
+        {
+          "width": 1440,
+          "height": 900,
+          "start": {
+            "x": 298,
+            "y": 853.578125,
+            "width": 268,
+            "height": 44
+          },
+          "board": {
+            "x": 298,
+            "y": 322.578125,
+            "width": 490,
+            "height": 515
+          }
+        }
+      ]
+    },
+    {
+      "id": "baf9c402",
+      "result": "Connection streak 0\nCombo ×1\nLocal best 3,217"
+    },
+    {
+      "id": "1f23509b",
+      "result": {
+        "selected": 1,
+        "kind": "conduit",
+        "scrambled": true,
+        "source": 0
+      }
+    }
+  ]
+}

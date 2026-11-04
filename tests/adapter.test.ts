@@ -65,6 +65,23 @@ describe('new-work energy accounting', () => {
     t = breakContinuity(t); t = take(t, 30000, 30, 202); expect(t.charges).toBe(0);
     t = take(t, 31000, 31, 203); expect(t.charges).toBe(1);
   });
+  it('keeps the baseline pending through pre-break repeats and discards hidden-gap movement', () => {
+    let t = sample(emptyTracker(), status(), economy, NOW);
+    t = take(t, 500, 1, 1);
+    t = breakContinuity(t, 'Tab was hidden. No background energy is awarded.');
+    for (let second = 2; second <= 30; second++) {
+      t = sample(t, status(500, 1, 1), economy, NOW + second * 1000);
+      expect(t.needsBaseline).toBe(true); expect(t.charges).toBe(0);
+      expect(t.note).toContain('Tab was hidden');
+    }
+    t = sample(t, status(), economy, NOW + 30000);
+    expect(t.needsBaseline).toBe(true);
+    t = take(t, 27500, 31, 31);
+    expect(t.needsBaseline).toBe(false); expect(t.charges).toBe(0);
+    expect(t.remainderMm).toBe(0); expect(t.note).toContain('Reconnected and rebaselined');
+    t = take(t, 29000, 32, 32); expect(t.charges).toBe(1); expect(t.remainderMm).toBe(500);
+    t = take(t, 29000, 32, 32); expect(t.charges).toBe(1);
+  });
   it('zero-distance or zero-work samples never bank unpaired movement', () => {
     let t = sample(emptyTracker(), status(), economy, NOW);
     t = take(t, 1000, 0, 1); t = take(t, 1000, 1, 2); expect(t.charges).toBe(0);
@@ -72,9 +89,15 @@ describe('new-work energy accounting', () => {
   });
   it('reports honest idle, live, stale and unavailable states including time and freshness bounds', () => {
     expect(freshness(null, NOW)).toBe('unavailable'); expect(freshness(status(), NOW)).toBe('idle');
-    const running = status(); running.measurement.coreStatus = 'RUNNING'; running.measurement.rpmMilli = 500;
+    const running = status(); running.measurement.coreStatus = 'IDLE'; running.measurement.rpmMilli = 66053;
     expect(freshness(running, NOW)).toBe('live'); expect(freshness(running, NOW + 120001)).toBe('stale');
     expect(freshness(status(0, 0, 60), NOW)).toBe('stale'); running.measurement.freshness = 'offline'; expect(freshness(running, NOW)).toBe('stale');
+  });
+  it('uses either motion field for live and requires both zero for idle, regardless of core lifecycle', () => {
+    for (const coreStatus of ['ACTIVE', 'IDLE']) for (const [rpmMilli, speedMmPerSecond, expected] of [[0, 0, 'idle'], [0, 967, 'live'], [66053, 0, 'live'], [66053, 967, 'live']] as const) {
+      const s = status(); Object.assign(s.measurement, { coreStatus, rpmMilli, speedMmPerSecond });
+      expect(freshness(s, NOW)).toBe(expected);
+    }
   });
 });
 describe('serialized, abortable polling', () => {
@@ -112,5 +135,13 @@ describe('serialized, abortable polling', () => {
     const fetcher = vi.fn(() => new Promise<Response>(() => {})) as typeof fetch;
     const poller = createPoller({ onChange() {}, fetcher, timeoutMs: 100 }); poller.start(); await vi.advanceTimersByTimeAsync(101);
     expect(poller.getState().errors.status).toContain('timed out'); expect(poller.getState().status).toBeNull(); poller.pause();
+  });
+  it('turns transport failures into an actionable message and recovers on retry', async () => {
+    vi.useFakeTimers(); vi.setSystemTime(NOW); let connected = false;
+    const fetcher = vi.fn(async (url: string) => { if (!connected) throw new TypeError('Failed to fetch'); return ok(url); }) as unknown as typeof fetch;
+    const poller = createPoller({ onChange() {}, fetcher }); poller.start(); await vi.advanceTimersByTimeAsync(5);
+    expect(poller.getState().errors.archive).toBe('Squeekchain could not be reached. Retry, or practice in Demo.');
+    connected = true; poller.retry(); await vi.advanceTimersByTimeAsync(5);
+    expect(poller.getState().archive).not.toBeNull(); expect(poller.getState().errors.archive).toBeUndefined(); poller.pause();
   });
 });

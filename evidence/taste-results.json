@@ -4,14 +4,14 @@
    "name": "render",
    "passed": true,
    "exitCode": 0,
-   "durationMs": 10546,
+   "durationMs": 13002,
    "output": "renders, no script errors or missing local files\nexternal hosts: api.squeekchain.com"
   },
   {
    "name": "layout",
    "passed": true,
    "exitCode": 0,
-   "durationMs": 0,
+   "durationMs": 1,
    "output": "no horizontal scroll at 320, 390 or 1440\nno text box overlaps another\nno floating control covers text\nno text cut off by overflow: hidden"
   },
   {
@@ -32,7 +32,7 @@
    "name": "casing",
    "passed": true,
    "exitCode": 0,
-   "durationMs": 0,
+   "durationMs": 2,
    "output": "no all-caps text in content"
   },
   {
@@ -81,14 +81,14 @@
    "name": "repetition",
    "passed": true,
    "exitCode": 0,
-   "durationMs": 1,
+   "durationMs": 3,
    "output": "no repeated lines"
   },
   {
    "name": "copy-budget",
    "passed": true,
    "exitCode": 0,
-   "durationMs": 0,
+   "durationMs": 1,
    "output": "prose on the first screen: 17 words at 390 (bar 60), 39 at 1440 (bar 90)\nall words on the first screen: 71 at 390, 130 at 1440\nwhole page: 163 words, 48 of them prose"
   },
   {
@@ -114,7 +114,7 @@
   }
  ],
  "target": "dist",
- "at": "2026-11-04T02:16:03.252Z",
+ "at": "2026-11-04T02:59:51.507Z",
  "bar": {
   "sizes": 6,
   "strays": 8,
@@ -206,39 +206,39 @@
      "h": 51,
      "cx": 55.4140625,
      "cy": 427.7890625,
-     "label": "A1, hamster wheel, east, power"
+     "label": "A1"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(2)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(2)",
      "w": 51,
      "h": 51,
      "cx": 111.2421875,
      "cy": 427.7890625,
-     "label": "A2"
+     "label": "A2, fern"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(3)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-rock:nth-of-type(3)",
      "w": 51,
      "h": 51,
      "cx": 167.0703125,
      "cy": 427.7890625,
-     "label": "A3, fern"
+     "label": "A3, stone obstacle"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(4)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-beacon:nth-of-type(4)",
      "w": 51,
      "h": 51,
      "cx": 222.90625,
      "cy": 427.796875,
-     "label": "A4, fern"
+     "label": "○"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(5)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-beacon:nth-of-type(5)",
      "w": 51,
      "h": 51,
      "cx": 278.7421875,
      "cy": 427.7890625,
-     "label": "A5, fern"
+     "label": "○"
     },
     {
      "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(6)",
@@ -249,20 +249,20 @@
      "label": "A6, fern"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-rock:nth-of-type(7)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(7)",
      "w": 51,
      "h": 51,
      "cx": 55.4140625,
      "cy": 483.6171875,
-     "label": "B1, stone obstacle"
+     "label": "B1, straight conduit, east, we"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(8)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(8)",
      "w": 51,
      "h": 51,
      "cx": 111.2421875,
      "cy": 483.6171875,
-     "label": "B2, straight conduit, north, s"
+     "label": "B2, fern"
     },
     {
      "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(9)",
@@ -273,20 +273,20 @@
      "label": "B3, fern"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(10)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(10)",
      "w": 51,
      "h": 51,
      "cx": 222.90625,
      "cy": 483.625,
-     "label": "B4, fern"
+     "label": "B4, straight conduit, east, we"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(11)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(11)",
      "w": 51,
      "h": 51,
      "cx": 278.7421875,
      "cy": 483.6171875,
-     "label": "B5, fern"
+     "label": "B5, straight conduit, north, s"
     },
     {
      "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(12)",
@@ -297,20 +297,20 @@
      "label": "B6, fern"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-beacon:nth-of-type(13)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(13)",
      "w": 51,
      "h": 51,
      "cx": 55.4140625,
      "cy": 539.4453125,
-     "label": "○"
+     "label": "C1, straight conduit, north, s"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(14)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-rock:nth-of-type(14)",
      "w": 51,
      "h": 51,
      "cx": 111.2421875,
      "cy": 539.4453125,
-     "label": "C2, T-junction, north, south, "
+     "label": "C2, stone obstacle"
     },
     {
      "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-rock:nth-of-type(15)",
@@ -321,20 +321,20 @@
      "label": "C3, stone obstacle"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(16)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(16)",
      "w": 51,
      "h": 51,
      "cx": 222.90625,
      "cy": 539.453125,
-     "label": "C4, fern"
+     "label": "C4, straight conduit, north, s"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(17)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(17)",
      "w": 51,
      "h": 51,
      "cx": 278.7421875,
      "cy": 539.4453125,
-     "label": "C5, fern"
+     "label": "C5, straight conduit, north, s"
     },
     {
      "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(18)",
@@ -345,12 +345,12 @@
      "label": "C6, fern"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(19)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(19)",
      "w": 51,
      "h": 51,
      "cx": 55.4140625,
      "cy": 595.2734375,
-     "label": "D1, fern"
+     "label": "D1, elbow conduit, north, east"
     },
     {
      "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(20)",
@@ -358,7 +358,7 @@
      "h": 51,
      "cx": 111.2421875,
      "cy": 595.2734375,
-     "label": "D2, T-junction, north, east, w"
+     "label": "D2, straight conduit, east, we"
     },
     {
      "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(21)",
@@ -366,7 +366,7 @@
      "h": 51,
      "cx": 167.0703125,
      "cy": 595.2734375,
-     "label": "D3, straight conduit, east, we"
+     "label": "D3, T-junction, east, south, w"
     },
     {
      "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(22)",
@@ -374,7 +374,7 @@
      "h": 51,
      "cx": 222.90625,
      "cy": 595.28125,
-     "label": "D4, straight conduit, north, s"
+     "label": "D4, T-junction, north, east, w"
     },
     {
      "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(23)",
@@ -382,39 +382,39 @@
      "h": 51,
      "cx": 278.7421875,
      "cy": 595.2734375,
-     "label": "D5, straight conduit, east, we"
+     "label": "D5, T-junction, north, south, "
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-beacon:nth-of-type(24)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(24)",
      "w": 51,
      "h": 51,
      "cx": 334.5703125,
      "cy": 595.2734375,
-     "label": "○"
+     "label": "D6, elbow conduit, south, west"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-beacon:nth-of-type(25)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(25)",
      "w": 51,
      "h": 51,
      "cx": 55.4140625,
      "cy": 651.1015625,
-     "label": "○"
+     "label": "E1, fern"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(26)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(26)",
      "w": 51,
      "h": 51,
      "cx": 111.2421875,
      "cy": 651.1015625,
-     "label": "E2, T-junction, north, south, "
+     "label": "E2, fern"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-rock:nth-of-type(27)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(27)",
      "w": 51,
      "h": 51,
      "cx": 167.0703125,
      "cy": 651.1015625,
-     "label": "E3, stone obstacle"
+     "label": "E3, straight conduit, north, s"
     },
     {
      "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(28)",
@@ -433,12 +433,12 @@
      "label": "E5, fern"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(30)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(30)",
      "w": 51,
      "h": 51,
      "cx": 334.5703125,
      "cy": 651.1015625,
-     "label": "E6, fern"
+     "label": "E6, straight conduit, east, we"
     },
     {
      "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(31)",
@@ -449,36 +449,36 @@
      "label": "F1, fern"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(32)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(32)",
      "w": 51,
      "h": 51,
      "cx": 111.2421875,
      "cy": 706.9453125,
-     "label": "F2, elbow conduit, north, east"
+     "label": "F2, fern"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(33)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-beacon:nth-of-type(33)",
      "w": 51,
      "h": 51,
      "cx": 167.0703125,
      "cy": 706.9453125,
-     "label": "F3, straight conduit, east, we"
+     "label": "○"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(34)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(34)",
      "w": 51,
      "h": 51,
      "cx": 222.90625,
      "cy": 706.953125,
-     "label": "F4, straight conduit, north, s"
+     "label": "F4, fern"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(35)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(35)",
      "w": 51,
      "h": 51,
      "cx": 278.7421875,
      "cy": 706.9453125,
-     "label": "F5, straight conduit, east, we"
+     "label": "F5, fern"
     },
     {
      "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-beacon:nth-of-type(36)",
@@ -661,39 +661,39 @@
      "h": 73,
      "cx": 346.328125,
      "cy": 395.90625,
-     "label": "A1, hamster wheel, east, power"
+     "label": "A1"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(2)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(2)",
      "w": 73,
      "h": 73,
      "cx": 424.9921875,
      "cy": 395.9140625,
-     "label": "A2"
+     "label": "A2, fern"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(3)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-rock:nth-of-type(3)",
      "w": 73,
      "h": 73,
      "cx": 503.65625,
      "cy": 395.90625,
-     "label": "A3, fern"
+     "label": "A3, stone obstacle"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(4)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-beacon:nth-of-type(4)",
      "w": 73,
      "h": 73,
      "cx": 582.3203125,
      "cy": 395.9140625,
-     "label": "A4, fern"
+     "label": "○"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(5)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-beacon:nth-of-type(5)",
      "w": 73,
      "h": 73,
      "cx": 660.9921875,
      "cy": 395.9140625,
-     "label": "A5, fern"
+     "label": "○"
     },
     {
      "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(6)",
@@ -704,20 +704,20 @@
      "label": "A6, fern"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-rock:nth-of-type(7)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(7)",
      "w": 73,
      "h": 73,
      "cx": 346.328125,
      "cy": 474.5625,
-     "label": "B1, stone obstacle"
+     "label": "B1, straight conduit, east, we"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(8)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(8)",
      "w": 73,
      "h": 73,
      "cx": 424.9921875,
      "cy": 474.5703125,
-     "label": "B2, straight conduit, north, s"
+     "label": "B2, fern"
     },
     {
      "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(9)",
@@ -728,20 +728,20 @@
      "label": "B3, fern"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(10)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(10)",
      "w": 73,
      "h": 73,
      "cx": 582.3203125,
      "cy": 474.5703125,
-     "label": "B4, fern"
+     "label": "B4, straight conduit, east, we"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(11)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(11)",
      "w": 73,
      "h": 73,
      "cx": 660.9921875,
      "cy": 474.5703125,
-     "label": "B5, fern"
+     "label": "B5, straight conduit, north, s"
     },
     {
      "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(12)",
@@ -752,20 +752,20 @@
      "label": "B6, fern"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-beacon:nth-of-type(13)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(13)",
      "w": 73,
      "h": 73,
      "cx": 346.328125,
      "cy": 553.21875,
-     "label": "○"
+     "label": "C1, straight conduit, north, s"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(14)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-rock:nth-of-type(14)",
      "w": 73,
      "h": 73,
      "cx": 424.9921875,
      "cy": 553.2265625,
-     "label": "C2, T-junction, north, south, "
+     "label": "C2, stone obstacle"
     },
     {
      "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-rock:nth-of-type(15)",
@@ -776,20 +776,20 @@
      "label": "C3, stone obstacle"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(16)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(16)",
      "w": 73,
      "h": 73,
      "cx": 582.3203125,
      "cy": 553.2265625,
-     "label": "C4, fern"
+     "label": "C4, straight conduit, north, s"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(17)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(17)",
      "w": 73,
      "h": 73,
      "cx": 660.9921875,
      "cy": 553.2265625,
-     "label": "C5, fern"
+     "label": "C5, straight conduit, north, s"
     },
     {
      "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(18)",
@@ -800,12 +800,12 @@
      "label": "C6, fern"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(19)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(19)",
      "w": 73,
      "h": 73,
      "cx": 346.328125,
      "cy": 631.890625,
-     "label": "D1, fern"
+     "label": "D1, elbow conduit, north, east"
     },
     {
      "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(20)",
@@ -813,7 +813,7 @@
      "h": 73,
      "cx": 424.9921875,
      "cy": 631.8984375,
-     "label": "D2, T-junction, north, east, w"
+     "label": "D2, straight conduit, east, we"
     },
     {
      "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(21)",
@@ -821,7 +821,7 @@
      "h": 73,
      "cx": 503.65625,
      "cy": 631.890625,
-     "label": "D3, straight conduit, east, we"
+     "label": "D3, T-junction, east, south, w"
     },
     {
      "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(22)",
@@ -829,7 +829,7 @@
      "h": 73,
      "cx": 582.3203125,
      "cy": 631.8984375,
-     "label": "D4, straight conduit, north, s"
+     "label": "D4, T-junction, north, east, w"
     },
     {
      "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(23)",
@@ -837,39 +837,39 @@
      "h": 73,
      "cx": 660.9921875,
      "cy": 631.8984375,
-     "label": "D5, straight conduit, east, we"
+     "label": "D5, T-junction, north, south, "
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-beacon:nth-of-type(24)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(24)",
      "w": 73,
      "h": 73,
      "cx": 739.65625,
      "cy": 631.890625,
-     "label": "○"
+     "label": "D6, elbow conduit, south, west"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-beacon:nth-of-type(25)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(25)",
      "w": 73,
      "h": 73,
      "cx": 346.328125,
      "cy": 710.5625,
-     "label": "○"
+     "label": "E1, fern"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(26)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(26)",
      "w": 73,
      "h": 73,
      "cx": 424.9921875,
      "cy": 710.5703125,
-     "label": "E2, T-junction, north, south, "
+     "label": "E2, fern"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-rock:nth-of-type(27)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(27)",
      "w": 73,
      "h": 73,
      "cx": 503.65625,
      "cy": 710.5625,
-     "label": "E3, stone obstacle"
+     "label": "E3, straight conduit, north, s"
     },
     {
      "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(28)",
@@ -888,12 +888,12 @@
      "label": "E5, fern"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(30)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(30)",
      "w": 73,
      "h": 73,
      "cx": 739.65625,
      "cy": 710.5625,
-     "label": "E6, fern"
+     "label": "E6, straight conduit, east, we"
     },
     {
      "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(31)",
@@ -904,36 +904,36 @@
      "label": "F1, fern"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(32)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(32)",
      "w": 73,
      "h": 73,
      "cx": 424.9921875,
      "cy": 789.2421875,
-     "label": "F2, elbow conduit, north, east"
+     "label": "F2, fern"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(33)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-beacon:nth-of-type(33)",
      "w": 73,
      "h": 73,
      "cx": 503.65625,
      "cy": 789.234375,
-     "label": "F3, straight conduit, east, we"
+     "label": "○"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(34)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(34)",
      "w": 73,
      "h": 73,
      "cx": 582.3203125,
      "cy": 789.2421875,
-     "label": "F4, straight conduit, north, s"
+     "label": "F4, fern"
     },
     {
-     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(35)",
+     "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-fern:nth-of-type(35)",
      "w": 73,
      "h": 73,
      "cx": 660.9921875,
      "cy": 789.2421875,
-     "label": "F5, straight conduit, east, we"
+     "label": "F5, fern"
     },
     {
      "sel": "section.garden-column > div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-beacon:nth-of-type(36)",
@@ -1279,7 +1279,7 @@
   },
   {
    "sel": "#garden > section.garden-column > div.source-line:nth-of-type(3) > span:nth-of-type(2)",
-   "text": "Historical round 1214",
+   "text": "Historical round 1230",
    "words": 3,
    "tag": "span",
    "size": 13,
@@ -1296,7 +1296,7 @@
    "pill": false,
    "x": 35,
    "y": 269.875,
-   "w": 121,
+   "w": 126,
    "h": 17,
    "fixed": false,
    "chrome": false,
@@ -1642,8 +1642,8 @@
    "digits": 0.13333333333333333
   },
   {
-   "sel": "div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(2) > span.tile-coordinate",
-   "text": "A2",
+   "sel": "div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-source:nth-of-type(1) > span.tile-coordinate",
+   "text": "A1",
    "words": 1,
    "tag": "span",
    "size": 13,
@@ -1658,9 +1658,9 @@
    "inCode": false,
    "heading": false,
    "pill": false,
-   "x": 90.828125,
+   "x": 35,
    "y": 434.609375,
-   "w": 20,
+   "w": 17,
    "h": 15.59375,
    "fixed": false,
    "chrome": false,
@@ -1773,7 +1773,7 @@
   },
   {
    "sel": "#garden > section.garden-column > div.selection-line:nth-of-type(7) > span:nth-of-type(1)",
-   "text": "A2 · elbow conduit",
+   "text": "A1 · hamster wheel",
    "words": 3,
    "tag": "span",
    "size": 13,
@@ -2111,7 +2111,7 @@
   },
   {
    "sel": "#garden > aside.garden-aside > section.reservoir:nth-of-type(1) > p:nth-of-type(1)",
-   "text": "498 settled work units → 2 bonus charges for this run.",
+   "text": "464 settled work units → 2 bonus charges for this run.",
    "words": 10,
    "tag": "p",
    "size": 14,
@@ -2319,7 +2319,7 @@
   },
   {
    "sel": "section.source-details:nth-of-type(2) > dl > div:nth-of-type(3) > dd",
-   "text": "4 Nov, 00:15 UTC",
+   "text": "4 Nov, 02:55 UTC",
    "words": 5,
    "tag": "dd",
    "size": 13,
@@ -2336,7 +2336,7 @@
    "pill": false,
    "x": 20,
    "y": 1522.84375,
-   "w": 100,
+   "w": 102,
    "h": 19.5,
    "fixed": false,
    "chrome": false,
@@ -2815,7 +2815,7 @@
   },
   {
    "sel": "#garden > section.garden-column > div.source-line:nth-of-type(3) > span:nth-of-type(2)",
-   "text": "Historical round 1214",
+   "text": "Historical round 1230",
    "words": 3,
    "tag": "span",
    "size": 13,
@@ -2832,7 +2832,7 @@
    "pill": false,
    "x": 313,
    "y": 230.078125,
-   "w": 121,
+   "w": 126,
    "h": 17,
    "fixed": false,
    "chrome": false,
@@ -3178,8 +3178,8 @@
    "digits": 0.13333333333333333
   },
   {
-   "sel": "div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-conduit:nth-of-type(2) > span.tile-coordinate",
-   "text": "A2",
+   "sel": "div.board-scene:nth-of-type(5) > div.garden-board:nth-of-type(2) > button.tile.tile-source:nth-of-type(1) > span.tile-coordinate",
+   "text": "A1",
    "words": 1,
    "tag": "span",
    "size": 13,
@@ -3194,9 +3194,9 @@
    "inCode": false,
    "heading": false,
    "pill": false,
-   "x": 393.65625,
-   "y": 413.65625,
-   "w": 20,
+   "x": 315,
+   "y": 413.640625,
+   "w": 17,
    "h": 15.59375,
    "fixed": false,
    "chrome": false,
@@ -3309,7 +3309,7 @@
   },
   {
    "sel": "#garden > section.garden-column > div.selection-line:nth-of-type(7) > span:nth-of-type(1)",
-   "text": "A2 · elbow conduit",
+   "text": "A1 · hamster wheel",
    "words": 3,
    "tag": "span",
    "size": 13,
@@ -3647,7 +3647,7 @@
   },
   {
    "sel": "#garden > aside.garden-aside > section.reservoir:nth-of-type(1) > p:nth-of-type(1)",
-   "text": "498 settled work units → 2 bonus charges for this run.",
+   "text": "464 settled work units → 2 bonus charges for this run.",
    "words": 10,
    "tag": "p",
    "size": 14,
@@ -3855,7 +3855,7 @@
   },
   {
    "sel": "section.source-details:nth-of-type(2) > dl > div:nth-of-type(3) > dd",
-   "text": "4 Nov, 00:15 UTC",
+   "text": "4 Nov, 02:55 UTC",
    "words": 5,
    "tag": "dd",
    "size": 13,
@@ -3870,9 +3870,9 @@
    "inCode": false,
    "heading": false,
    "pill": false,
-   "x": 1042,
+   "x": 1040,
    "y": 686.15625,
-   "w": 100,
+   "w": 102,
    "h": 19.5,
    "fixed": false,
    "chrome": false,

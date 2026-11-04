@@ -4,13 +4,13 @@ export function freshness(status: Status | null, now: number): Freshness {
   if (!status) return 'unavailable';
   const m = status.measurement, age = now - Date.parse(m.observedAt), generatedAge = now - Date.parse(status.generatedAt);
   if (m.freshness !== 'online' || age < -30_000 || generatedAge < -30_000 || age > m.staleAfterSeconds * 1000 || generatedAge > m.staleAfterSeconds * 1000) return 'stale';
-  return m.coreStatus === 'IDLE' || (m.rpmMilli === 0 && m.speedMmPerSecond === 0) ? 'idle' : 'live';
+  return m.rpmMilli === 0 && m.speedMmPerSecond === 0 ? 'idle' : 'live';
 }
 export interface Watermark { time: number; distance: number; work: string }
-export interface Tracker { identity: string; seen: Record<string, Watermark>; remainderMm: number; charges: number; needsBaseline: boolean; note: string; earned: number }
-export function emptyTracker(): Tracker { return { identity: '', seen: {}, remainderMm: 0, charges: 0, needsBaseline: true, note: 'Waiting for a fresh source baseline. Lifetime distance never grants energy.', earned: 0 }; }
+export interface Tracker { identity: string; seen: Record<string, Watermark>; remainderMm: number; charges: number; needsBaseline: boolean; breakAfter: number; note: string; earned: number }
+export function emptyTracker(): Tracker { return { identity: '', seen: {}, remainderMm: 0, charges: 0, needsBaseline: true, breakAfter: 0, note: 'Waiting for a fresh source baseline. Lifetime distance never grants energy.', earned: 0 }; }
 export function breakContinuity(t: Tracker, note = 'Connection interrupted. The next fresh sample becomes a new baseline.'): Tracker {
-  return { ...t, needsBaseline: true, remainderMm: 0, note };
+  return { ...t, needsBaseline: true, breakAfter: Math.max(t.breakAfter, t.seen[t.identity]?.time ?? 0), remainderMm: 0, note };
 }
 export function sample(t: Tracker, status: Status, economy: Economy, now: number): Tracker {
   if (status.installationId !== economy.installationId) return breakContinuity(t, 'Installations disagree. Bonus energy is suspended until they match.');
@@ -18,6 +18,8 @@ export function sample(t: Tracker, status: Status, economy: Economy, now: number
   const m = status.measurement;
   const identity = [status.installationId, economy.releaseId, economy.chain.chainId, m.counterEpoch].join('|');
   const time = Date.parse(m.observedAt), old = t.seen[identity];
+  // Cached pre-break samples cannot satisfy a reconnect, visibility or reload baseline.
+  if (t.needsBaseline && time <= t.breakAfter) return t;
   // High-water marks survive resets, revisits, reconnects and stored-run restoration.
   const watermark = { time: Math.max(time, old?.time ?? time), distance: Math.max(m.distanceMm, old?.distance ?? m.distanceMm), work: (BigInt(m.cumulativeWorkUnits) > BigInt(old?.work ?? '0') ? m.cumulativeWorkUnits : (old?.work ?? m.cumulativeWorkUnits)) };
   const rebaseline = (note: string): Tracker => ({ ...t, identity, seen: { ...t.seen, [identity]: watermark }, needsBaseline: false, remainderMm: 0, note });

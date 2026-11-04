@@ -1,19 +1,19 @@
 {
-  "generatedAt": "2026-11-04T02:31:44.794Z",
+  "generatedAt": "2026-11-04T03:05:58.857Z",
   "passed": true,
   "relativeAssets": true,
   "shareCard": "1200×630 PNG",
   "lockfileMatches": true,
   "distFiles": [
     {
-      "path": "dist/assets/index-BahOTosM.css",
-      "bytes": 21166,
-      "sha256": "776ad5855851f2970bf66cece2a56b2359164b1268dc39fd89f9acee6971c422"
+      "path": "dist/assets/index-BQtjzCy4.js",
+      "bytes": 247892,
+      "sha256": "34f97314823aa241235f2acc5520626a8adfe3b087b319d73e6b6cb3572d38be"
     },
     {
-      "path": "dist/assets/index-CFKWB8xB.js",
-      "bytes": 247201,
-      "sha256": "559b0fefe30a44087b4e8114257520450d8cc8d32c651ce6bc07d1f21e527ea4"
+      "path": "dist/assets/index-DnF-Tkq_.css",
+      "bytes": 21698,
+      "sha256": "22bf0ed3220c5d045d4c59c62d286454683e1e863e3564893c03142f09d11eec"
     },
     {
       "path": "dist/favicon.svg",
@@ -43,7 +43,7 @@
     {
       "path": "dist/index.html",
       "bytes": 1168,
-      "sha256": "9e8dc4f78654297aa463e55f2ec448df12047b5c8b2db73ca9fc027b4ecd3312"
+      "sha256": "ac800e512809d6ef0a12c2255b4ff053d9c4209a7762bb14aacb02c0d40f97b5"
     },
     {
       "path": "dist/og-image.png",
@@ -52,15 +52,15 @@
     }
   ],
   "pathBytes": {
-    "dist/": 417982,
+    "dist/": 419205,
     "public/": 148447,
-    "src/": 100357,
-    "tests/": 24445,
-    "scripts/": 43299,
+    "src/": 101931,
+    "tests/": 26737,
+    "scripts/": 57851,
     "LICENSES/": 11964,
-    "root source, lockfile and documentation": 97257,
-    "evidence/": 1457074
+    "root source, lockfile and documentation": 107342,
+    "evidence/": 1986446
   },
-  "totalBytes": 2300825,
+  "totalBytes": 2859923,
   "submissionLimitBytes": 8388608
 }
