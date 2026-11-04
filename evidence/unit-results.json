@@ -1,0 +1,199 @@
+{
+  "generatedAt": "2026-11-04T02:07:42.175Z",
+  "command": "npm test -- --reporter=json --outputFile=test/scratch/unit-raw.json",
+  "success": true,
+  "total": 34,
+  "passed": 34,
+  "failed": 0,
+  "pending": 0,
+  "suites": [
+    {
+      "file": "tests/adapter.test.ts",
+      "status": "passed",
+      "checks": [
+        {
+          "name": "strict verified public API adapters validates schema and every consumed status field, ignores optimistic projections",
+          "status": "passed",
+          "durationMs": 5.697198000000014
+        },
+        {
+          "name": "strict verified public API adapters requires actual network, release and lifecycle from economy schema 2",
+          "status": "passed",
+          "durationMs": 1.0499240000000327
+        },
+        {
+          "name": "new-work energy accounting pins lifetime counters without awarding the past, including zero-work initial counters",
+          "status": "passed",
+          "durationMs": 0.649772999999982
+        },
+        {
+          "name": "new-work energy accounting earns only paired positive deltas, preserves fractional mm, caps at 3 and discards overflow",
+          "status": "passed",
+          "durationMs": 0.6319470000000251
+        },
+        {
+          "name": "new-work energy accounting never duplicates energy from repeated or reordered timestamps, even after a charge is consumed",
+          "status": "passed",
+          "durationMs": 0.7037839999999846
+        },
+        {
+          "name": "new-work energy accounting counter decreases retain high-water marks; replayed old counters earn nothing",
+          "status": "passed",
+          "durationMs": 0.5435049999999819
+        },
+        {
+          "name": "new-work energy accounting epoch, installation, release and chain changes rebaseline; returning to an old identity cannot replay it",
+          "status": "passed",
+          "durationMs": 1.016463999999985
+        },
+        {
+          "name": "new-work energy accounting stale and unavailable input suspend bonuses and rebaseline fresh reconnects",
+          "status": "passed",
+          "durationMs": 0.4286920000000123
+        },
+        {
+          "name": "new-work energy accounting zero-distance or zero-work samples never bank unpaired movement",
+          "status": "passed",
+          "durationMs": 0.4362939999999753
+        },
+        {
+          "name": "new-work energy accounting reports honest idle, live, stale and unavailable states including time and freshness bounds",
+          "status": "passed",
+          "durationMs": 5.347463000000005
+        },
+        {
+          "name": "serialized, abortable polling honors numeric/date Retry-After values",
+          "status": "passed",
+          "durationMs": 1.2504539999999906
+        },
+        {
+          "name": "serialized, abortable polling polls status every 10s and economy every 60s without overlapping any request",
+          "status": "passed",
+          "durationMs": 37.834788
+        },
+        {
+          "name": "serialized, abortable polling backs off, respects Retry-After even on manual retry, then recovers",
+          "status": "passed",
+          "durationMs": 2.7704819999999586
+        },
+        {
+          "name": "serialized, abortable polling suspends hidden work and ignores late responses even when a transport ignores abort",
+          "status": "passed",
+          "durationMs": 1.4874699999999734
+        },
+        {
+          "name": "serialized, abortable polling times out a stalled response body as well as response headers",
+          "status": "passed",
+          "durationMs": 1.2060460000000148
+        },
+        {
+          "name": "serialized, abortable polling times out a hanging request and does not falsely mark it successful",
+          "status": "passed",
+          "durationMs": 0.9983270000000175
+        }
+      ]
+    },
+    {
+      "file": "tests/archive.test.ts",
+      "status": "passed",
+      "checks": [
+        {
+          "name": "safe archive reproducibility pins a real safe positive-work transaction and identical puzzle/budget on two devices",
+          "status": "passed",
+          "durationMs": 6.732759999999985
+        },
+        {
+          "name": "safe archive reproducibility never assumes contiguous rounds; filters idle, pending, invalid and duplicate entries",
+          "status": "passed",
+          "durationMs": 0.6664490000000001
+        },
+        {
+          "name": "safe archive reproducibility rejects a mismatched installation or chain; never invents explorer links",
+          "status": "passed",
+          "durationMs": 1.4272679999999696
+        },
+        {
+          "name": "safe archive reproducibility bounds the actual work-based energy budget without unsafe number conversion",
+          "status": "passed",
+          "durationMs": 0.3911669999999958
+        },
+        {
+          "name": "safe archive reproducibility rejects incomplete and non-safe source fields",
+          "status": "passed",
+          "durationMs": 1.1119359999999574
+        },
+        {
+          "name": "local progress with graceful storage failure restores the exact garden and pauses active play on reload",
+          "status": "passed",
+          "durationMs": 4.851310999999953
+        },
+        {
+          "name": "local progress with graceful storage failure discards corrupt progress and reports inaccessible storage",
+          "status": "passed",
+          "durationMs": 1.6249149999999872
+        },
+        {
+          "name": "local progress with graceful storage failure preserves live high-water marks through reload and requires rebaselining",
+          "status": "passed",
+          "durationMs": 1.0954020000000355
+        }
+      ]
+    },
+    {
+      "file": "tests/engine.test.ts",
+      "status": "passed",
+      "checks": [
+        {
+          "name": "connected-solution generator retains stable unsigned hashing and rotation primitives",
+          "status": "passed",
+          "durationMs": 2.9650040000000217
+        },
+        {
+          "name": "connected-solution generator makes 3000 deterministic solvable 6×6 boards within budget, with four leaves and all tile types",
+          "status": "passed",
+          "durationMs": 1323.6250610000002
+        },
+        {
+          "name": "connected-solution generator completes 100 full three-board games using only legal clockwise rotations",
+          "status": "passed",
+          "durationMs": 37.16846199999986
+        },
+        {
+          "name": "real gameplay states and budgets selects without rotating; blocks fixed cells and paused input",
+          "status": "passed",
+          "durationMs": 0.5952620000000479
+        },
+        {
+          "name": "real gameplay states and budgets loses at the move cap and restarts exact initial source, clock and budget",
+          "status": "passed",
+          "durationMs": 0.8437840000001415
+        },
+        {
+          "name": "real gameplay states and budgets loses on the shared three-minute clock; cannot rotate after loss",
+          "status": "passed",
+          "durationMs": 0.2626829999999245
+        },
+        {
+          "name": "real gameplay states and budgets spends one charge only on a routed beacon, never twice on the same flower",
+          "status": "passed",
+          "durationMs": 0.32771200000001954
+        },
+        {
+          "name": "real gameplay states and budgets pins boards until explicit advancement; only the next live board uses a new round key",
+          "status": "passed",
+          "durationMs": 0.4529899999999998
+        },
+        {
+          "name": "real gameplay states and budgets resets combo when a rotation connects a new flower but disconnects old ones; reconnects cannot farm points",
+          "status": "passed",
+          "durationMs": 0.9514360000000579
+        },
+        {
+          "name": "real gameplay states and budgets keeps deterministic fixture stable",
+          "status": "passed",
+          "durationMs": 2.32763900000009
+        }
+      ]
+    }
+  ]
+}

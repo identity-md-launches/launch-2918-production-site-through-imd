@@ -18,7 +18,7 @@ export function Modal({ title, onClose, children, wide = false }: { title: strin
     onKeyDown={e => {
       if (e.key !== 'Tab') return;
       const controls = [...e.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input:not([disabled]), textarea, summary, [tabindex="0"]')]
-        .filter(el => el.getClientRects().length > 0);
+        .filter(el => el.getClientRects().length > 0 && el.tabIndex >= 0);
       const first = controls[0], last = controls.at(-1);
       if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
       else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }

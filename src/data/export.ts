@@ -1,61 +1,32 @@
-import { score } from '../core/engine';
-import type { Round } from '../core/types';
-
+import { connections } from '../core/engine';
+import type { Run } from '../core/types';
+import { networkName } from './archive';
+import { tileArt } from '../components/art';
 export function download(blob: Blob, name: string) {
   const url = URL.createObjectURL(blob), link = document.createElement('a');
   link.href = url; link.download = name; document.body.append(link); link.click(); link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
-
-export function roundName(round: Round): string {
-  const input = round.puzzle.input;
-  return input.kind === 'demo' ? `demo-${input.index}` : `block-${input.block.number}`;
+const escape = (value: string) => value.replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' })[c]!);
+export function gardenSVG(run: Run): string {
+  const powered = connections(run.tiles, run.puzzle.source);
+  const cells = run.tiles.map((tile, i) => `<g transform="translate(${360 + i % 6 * 80} ${70 + Math.floor(i / 6) * 80})"><rect width="76" height="76" rx="10" fill="${powered.has(i) ? '#202a3b' : '#182139'}"/><g transform="scale(.76)">${tileArt(tile, powered.has(i), run.boosted.includes(i))}</g></g>`).join('');
+  const mode = run.source.mode === 'demo' ? 'Demo · offline practice' : run.source.mode === 'archive' ? `Historical round ${run.boardRound}` : `Live Garden · round ${run.boardRound}`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675"><rect width="1200" height="675" fill="#0b1021"/><g fill="#536e8a">${[40, 180, 290, 870, 1020, 1150].map((x, i) => `<circle cx="${x}" cy="${70 + i % 3 * 100}" r="2"/>`).join('')}</g><g font-family="sans-serif"><text x="44" y="70" font-size="28" fill="#f2eee4">Squeek</text><text x="44" y="108" font-size="28" fill="#edc77c">Signal Garden</text><text x="44" y="170" font-size="18" fill="#a9b7ca">${escape(mode)}</text><text x="44" y="204" font-size="16" fill="#a9b7ca">${escape(networkName(run.source.network))}</text><text x="44" y="300" font-size="40" fill="#f2eee4">${run.score} points</text><text x="44" y="340" font-size="18" fill="#a9b7ca">Garden ${run.stage + 1} / 3 · ${escape(run.phase)}</text><text x="44" y="380" font-size="18" fill="#a9b7ca">${run.moves} / ${run.puzzle.limit} rotations</text><text x="44" y="420" font-size="18" fill="#a9b7ca">${run.charges} growth charge${run.charges === 1 ? '' : 's'}</text>${cells}<text x="44" y="590" font-size="16" fill="#a9b7ca">${escape(run.source.timestamp ? `Source: ${run.source.timestamp}` : 'Fixed practice fixture. No live data.')}</text>${run.source.settlement ? `<text x="44" y="620" font-size="14" fill="#a9b7ca">${escape(run.source.settlement.transactionHash)}</text>` : ''}<text x="44" y="652" font-size="14" fill="#a9b7ca">Static snapshot of the current garden · Local score · No token rewards</text></g></svg>`;
 }
-
-export function exportJSON(round: Round) {
-  download(new Blob([JSON.stringify({
-    format: 'blocklight-archive', version: 1, input: round.puzzle.input,
-    attempt: { phase: round.phase, presses: round.history, hints: round.hints, undos: round.undos, score: round.phase === 'won' ? score(round) : 0 },
-    seed: round.puzzle.seed, initialBoard: round.puzzle.initial, par: round.puzzle.par,
-  }, null, 2)], { type: 'application/json' }), `blocklight-${roundName(round)}.json`);
+export async function exportPNG(run: Run): Promise<void> {
+  const svg = new Blob([gardenSVG(run)], { type: 'image/svg+xml' }), url = URL.createObjectURL(svg);
+  try {
+    const img = new Image(); img.src = url; await img.decode();
+    const canvas = document.createElement('canvas'); canvas.width = 1200; canvas.height = 675;
+    const ctx = canvas.getContext('2d'); if (!ctx) throw new Error('This browser cannot export a PNG. Try another browser.');
+    ctx.drawImage(img, 0, 0);
+    const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error('PNG creation failed. Try again.')), 'image/png'));
+    download(blob, `squeek-garden-${run.source.mode}-${run.source.round}.png`);
+  } finally { URL.revokeObjectURL(url); }
 }
-
-export async function exportPNG(round: Round): Promise<void> {
-  await document.fonts.ready;
-  const canvas = document.createElement('canvas'); canvas.width = 1200; canvas.height = 1000;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('PNG export is unavailable in this browser. Export the JSON puzzle instead.');
-  const text = (value: string, x: number, y: number, size: number, color = '#202820', family = 'DM Sans, sans-serif') => {
-    ctx.fillStyle = color; ctx.font = `500 ${size}px ${family}`; ctx.fillText(value, x, y);
-  };
-  ctx.fillStyle = '#f4f5ed'; ctx.fillRect(0, 0, 1200, 1000);
-  text('Blocklight', 60, 88, 38, '#202820', 'Space Grotesk, sans-serif');
-  text('Every block. Lights out.', 60, 166, 52, '#202820', 'Space Grotesk, sans-serif');
-  const input = round.puzzle.input;
-  const source = input.kind === 'demo' ? `Demo ${input.index} · offline practice` : `${round.origin === 'live' ? 'Live snapshot' : 'Archive replay'} · Ethereum block ${input.block.number}`;
-  text(source, 60, 220, 24);
-  ctx.fillStyle = '#202820'; ctx.beginPath(); ctx.roundRect(60, 264, 530, 530, 24); ctx.fill();
-  for (let i = 0; i < 25; i++) {
-    const x = 80 + (i % 5) * 100, y = 284 + Math.floor(i / 5) * 100;
-    const on = !!(round.board & (1 << i));
-    ctx.fillStyle = on ? '#d4ed93' : '#65735d'; ctx.beginPath(); ctx.roundRect(x, y, 90, 90, 14); ctx.fill();
-    ctx.beginPath(); ctx.arc(x + 45, y + 45, 6, 0, Math.PI * 2);
-    if (on) { ctx.fillStyle = '#202820'; ctx.fill(); } else { ctx.strokeStyle = '#f4f5ed'; ctx.lineWidth = 2; ctx.stroke(); }
-  }
-  const status = round.phase === 'won' ? 'Lights out.' : round.phase === 'lost' ? 'Out of moves.' : round.phase === 'ready' ? 'Ready to play.' : 'In progress.';
-  text(status, 650, 326, 38);
-  text(`Moves  ${round.history.length} / ${round.puzzle.limit}`, 650, 400, 28);
-  text(`Par  ${round.puzzle.par}`, 650, 448, 28);
-  text(`Score  ${round.phase === 'won' ? score(round) : 0}`, 650, 496, 28);
-  text(`Hints  ${round.hints}  ·  Undos  ${round.undos}`, 650, 544, 24);
-  text(`Engine v1 · Seed ${round.puzzle.seed.toString(16).padStart(8, '0')}`, 650, 640, 20);
-  if (input.kind === 'block') {
-    text('Block hash', 60, 848, 20);
-    text(input.block.hash, 60, 885, 21, '#202820', 'monospace');
-  } else {
-    text('Demo puzzle. No live blockchain data is used.', 60, 866, 24);
-  }
-  text('A static snapshot. Replay the original puzzle with its JSON archive or shared link.', 60, 953, 20);
-  const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error('Unable to create a PNG. Try the JSON export.')), 'image/png'));
-  download(blob, `blocklight-${roundName(round)}-${round.phase}.png`);
+export function overlayURL(run: Run | null): string {
+  const url = new URL(location.href); url.hash = ''; url.search = ''; url.searchParams.set('overlay', '1'); url.searchParams.set('controls', '0');
+  if (run) { url.searchParams.set('mode', run.source.mode); url.searchParams.set('round', run.source.round); if (run.source.settlement) url.searchParams.set('tx', run.source.settlement.transactionHash); }
+  return url.toString();
 }

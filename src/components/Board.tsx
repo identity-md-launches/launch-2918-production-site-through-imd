@@ -1,57 +1,28 @@
-import { useRef, useState, type KeyboardEvent } from 'react';
-import { cellName, MASKS, popcount, SIZE } from '../core/engine';
-import type { Round } from '../core/types';
-import { Icon } from './Icon';
-
-export function Board({ round, onPress, onRestart, onUndo, onExport }: { round: Round; onPress: (cell: number) => void; onRestart: () => void; onUndo: () => void; onExport: () => void }) {
-  const [focused, setFocused] = useState(0);
-  const [hovered, setHovered] = useState<number | null>(null);
-  const refs = useRef<(HTMLButtonElement | null)[]>([]);
-  const active = round.phase === 'playing';
-  const pressable = active || round.phase === 'ready';
-  function navigate(event: KeyboardEvent<HTMLButtonElement>, i: number) {
-    let next = i;
-    const row = Math.floor(i / SIZE), col = i % SIZE;
-    if (event.key === 'ArrowRight') next = row * SIZE + (col + 1) % SIZE;
-    else if (event.key === 'ArrowLeft') next = row * SIZE + (col + SIZE - 1) % SIZE;
-    else if (event.key === 'ArrowDown') next = ((row + 1) % SIZE) * SIZE + col;
-    else if (event.key === 'ArrowUp') next = ((row + SIZE - 1) % SIZE) * SIZE + col;
-    else if (event.key === 'Home') next = event.ctrlKey ? 0 : row * SIZE;
-    else if (event.key === 'End') next = event.ctrlKey ? SIZE * SIZE - 1 : row * SIZE + SIZE - 1;
-    else return;
-    event.preventDefault(); setFocused(next); refs.current[next]?.focus();
-  }
-  const origin = round.origin === 'demo' ? 'Demo puzzle' : round.origin === 'archive' ? 'Archive replay' : 'Live snapshot';
-  return <section className="board-section" aria-label="Puzzle board">
-    <div className="board-frame">
-      <div className="board-topline"><span className="board-origin"><span className="tiny-grid" aria-hidden="true">▦</span>{origin}</span><span>5 × 5</span></div>
-      <div className="grid" role="grid" aria-label="5 by 5 Lights Out puzzle" aria-describedby="board-instructions" onMouseLeave={() => setHovered(null)}>
-        {Array.from({ length: SIZE }, (_, row) => <div className="grid-row" role="row" key={row}>
-          {Array.from({ length: SIZE }, (_, col) => {
-            const i = row * SIZE + col, on = !!(round.board & (1 << i));
-            const hint = round.hintCell === i;
-            const affected = pressable && hovered !== null && !!(MASKS[hovered] & (1 << i));
-            return <div className="grid-cell" role="gridcell" key={i}>
-              <button ref={el => { refs.current[i] = el; }} data-cell={i}
-                className={`tile${on ? ' tile-on' : ''}${hint ? ' tile-hint' : ''}${affected ? ' tile-affected' : ''}`}
-                aria-label={`${cellName(i)}, light ${on ? 'on' : 'off'}${hint ? ', suggested move' : ''}`}
-                aria-pressed={on} disabled={!pressable} tabIndex={i === focused ? 0 : -1}
-                onFocus={() => { setFocused(i); setHovered(i); }} onBlur={() => setHovered(null)}
-                onMouseEnter={() => setHovered(i)} onKeyDown={e => navigate(e, i)} onClick={() => onPress(i)}>
-                <span className="light-mark" aria-hidden="true" />{hint && <span className="hint-label" aria-hidden="true">Hint</span>}
-              </button>
-            </div>;
-          })}
-        </div>)}
-      </div>
-      <div className="board-bottomline"><span>{popcount(round.board)} lights on</span><span>{round.phase === 'ready' ? 'Ready to play' : round.phase === 'won' ? 'Grid cleared' : round.phase === 'lost' ? 'Round finished' : 'Round in progress'}</span></div>
-    </div>
-    <div className="board-tools">
-      <button className="button button-quiet" onClick={onUndo} disabled={!active || !round.history.length} title="Undo a move; costs 50 points"><Icon name="undo" />Undo</button>
-      <button className="button button-quiet" onClick={onRestart} disabled={round.phase === 'ready'}><Icon name="restart" />Restart</button>
-      <button className="button button-quiet" onClick={onExport}><Icon name="download" />Save PNG</button>
-    </div>
-    <p id="board-instructions" className="board-instructions">Select a tile to flip it and its neighbors. Turn every light off.</p>
-    <p className="keyboard-note">Keyboard: arrow keys to move, Space or Enter to flip.</p>
-  </section>;
+import { useRef, useState } from 'react';
+import { cellName, connections, ports, tileName } from '../core/engine';
+import type { Run } from '../core/types';
+import { tileArt } from './art';
+export function Board({ run, onSelect, onRotate, disabled = false, tutorialTarget }: { run: Run; onSelect: (index: number) => void; onRotate: () => void; disabled?: boolean; tutorialTarget?: number }) {
+  const [focus, setFocus] = useState(run.selected);
+  const buttons = useRef<(HTMLButtonElement | null)[]>([]);
+  const powered = connections(run.tiles, run.puzzle.source);
+  return <div className="garden-board" role="group" aria-label={`Garden ${run.stage + 1}, six by six conduit puzzle`}>
+    {run.tiles.map((tile, i) => <button key={i} type="button" ref={el => { buttons.current[i] = el; }}
+      className={`tile tile-${tile.kind}${powered.has(i) ? ' powered' : ''}${run.selected === i ? ' selected' : ''}${run.boosted.includes(i) ? ' boosted' : ''}${tutorialTarget === i ? ' tutorial-target' : ''}`}
+      aria-label={`${cellName(i)}, ${tileName(tile)}${tile.mask ? `, ${ports(tile.mask)}` : ''}${powered.has(i) ? ', powered' : ''}${run.boosted.includes(i) ? ', growth charged' : ''}`}
+      aria-pressed={run.selected === i} aria-disabled={disabled || undefined} data-cell={i} data-mask={tile.mask} data-kind={tile.kind}
+      tabIndex={!disabled && focus === i ? 0 : -1} onFocus={() => setFocus(i)}
+      onClick={() => { if (!disabled) { setFocus(i); onSelect(i); } }}
+      onKeyDown={e => {
+        if (disabled) return;
+        const row = Math.floor(i / 6), col = i % 6;
+        const next = e.key === 'ArrowRight' ? row * 6 + (col + 1) % 6 : e.key === 'ArrowLeft' ? row * 6 + (col + 5) % 6 : e.key === 'ArrowDown' ? ((row + 1) % 6) * 6 + col : e.key === 'ArrowUp' ? ((row + 5) % 6) * 6 + col : -1;
+        if (next >= 0) { e.preventDefault(); buttons.current[next]?.focus(); }
+        if (e.key.toLowerCase() === 'r' && !disabled) { e.preventDefault(); onRotate(); }
+      }}>
+      <svg viewBox="0 0 100 100" aria-hidden="true" dangerouslySetInnerHTML={{ __html: tileArt(tile, powered.has(i), run.boosted.includes(i)) }} />
+      {run.selected === i && <span className="tile-coordinate" aria-hidden="true">{cellName(i)}</span>}
+      {tile.kind === 'beacon' && <span className="beacon-mark" aria-hidden="true">{run.boosted.includes(i) ? '+' : powered.has(i) ? '✓' : '○'}</span>}
+    </button>)}
+  </div>;
 }

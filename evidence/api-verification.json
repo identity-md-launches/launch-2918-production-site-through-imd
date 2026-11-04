@@ -1,0 +1,67 @@
+{
+  "purpose": "Actual public API fields read before implementation; not a runtime fixture or independent consensus proof.",
+  "status": {
+    "endpoint": "https://api.squeekchain.com/v1/status",
+    "schemaVersion": 1,
+    "installationId": "stream-game-sepolia-test-20261025-01",
+    "generatedAt": "2026-11-04T01:20:37.482Z",
+    "measurement": {
+      "freshness": "online",
+      "observedAt": "2026-11-04T01:20:36.459Z",
+      "staleAfterSeconds": 120,
+      "counterEpoch": "c011f01a-93ba-45ff-8579-619ddfdf40ec",
+      "cumulativeWorkUnits": "89958",
+      "coreStatus": "IDLE",
+      "rpmMilli": 0,
+      "speedMmPerSecond": 0,
+      "distanceMm": 4588428
+    }
+  },
+  "economy": {
+    "endpoint": "https://api.squeekchain.com/v1/economy/state",
+    "schemaVersion": 2,
+    "installationId": "stream-game-sepolia-test-20261025-01",
+    "generatedAt": "2026-11-04T01:20:42.493Z",
+    "status": "available",
+    "chain": {
+      "target": "sepolia",
+      "chainId": "11155111"
+    },
+    "lifecycle": {
+      "currentRound": "1221"
+    },
+    "release": {
+      "id": "stream-game-sepolia-test-20261026-01"
+    }
+  },
+  "settlements": {
+    "endpoint": "https://api.squeekchain.com/v1/settlements?range=24h",
+    "schemaVersion": 3,
+    "installationId": "stream-game-sepolia-test-20261025-01",
+    "generatedAt": "2026-11-04T01:20:43.547Z",
+    "status": "available",
+    "chain": {
+      "target": "sepolia",
+      "chainId": "11155111"
+    },
+    "selectedRecentSettlements": [
+      {
+        "transactionHash": "0x0120e9817f1bf17a5ad0ba51f7815636ed61198236cf870582dc0a9b98c03c3b",
+        "settledThroughRound": "1214",
+        "workAdded": "498",
+        "cumulativeWork": "89958",
+        "confirmationStatus": "safe",
+        "blockTimestamp": "2026-11-04T00:15:36.000Z"
+      },
+      {
+        "transactionHash": "0x691863be2573b4dd436843f0294e4d7b04583e186535c3da3f0aaa5a17e2cade",
+        "settledThroughRound": "1213",
+        "workAdded": "188",
+        "cumulativeWork": "89460",
+        "confirmationStatus": "safe",
+        "blockTimestamp": "2026-11-04T00:00:36.000Z"
+      }
+    ]
+  },
+  "ignored": "builder.projected and financial/contract fields are never used as confirmed gameplay state."
+}

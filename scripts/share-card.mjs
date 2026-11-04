@@ -1,30 +1,35 @@
+import { readFile } from 'node:fs/promises';
 import { dependencyRequire } from './dependencies.mjs';
 import { serveExport } from './static-server.mjs';
 const { chromium } = dependencyRequire('playwright');
-const preview = await serveExport();
-let browser;
+const ts = dependencyRequire('typescript');
+async function load(file) {
+  const code = ts.transpileModule(await readFile(file, 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText;
+  return import('data:text/javascript;base64,' + Buffer.from(code).toString('base64'));
+}
+const engine = await load('src/core/engine.ts'), { DEMO_SOURCE } = await load('src/data/archive.ts');
+const preview = await serveExport(); let browser;
 try {
   browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage({ viewport: { width: 1200, height: 630 } });
-  await page.route('https://ethereum-rpc.publicnode.com/**', route => route.abort());
-  await page.goto(preview.url + '#p=1.d.1');
+  const page = await browser.newPage({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 1 });
+  await page.route('https://api.squeekchain.com/**', route => route.abort());
+  await page.goto(preview.url + '?mode=demo'); await page.getByRole('button', { name: 'Start garden', exact: true }).click();
+  for (const index of engine.solutionSteps(engine.createRun(DEMO_SOURCE))) {
+    if (await page.getByRole('button', { name: 'Next garden', exact: true }).count()) break;
+    await page.locator(`main [data-cell="${index}"]`).click(); await page.keyboard.press('r');
+  }
   await page.evaluate(async () => {
     await document.fonts.ready;
-    const canvas = document.createElement('canvas'); canvas.width = 1200; canvas.height = 630;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#f4f5ed'; ctx.fillRect(0, 0, 1200, 630);
-    ctx.fillStyle = '#202820'; ctx.font = '600 30px Space Grotesk'; ctx.fillText('Blocklight', 72, 85);
-    ctx.font = '600 76px Space Grotesk'; ctx.fillText('Every block.', 72, 260); ctx.fillText('Lights out.', 72, 345);
-    ctx.font = '400 26px DM Sans'; ctx.fillStyle = '#535f4c'; ctx.fillText('A logic puzzle born from an Ethereum block.', 72, 415);
-    ctx.font = '500 21px DM Sans'; ctx.fillText('Free to play. No wallet needed.', 72, 550);
-    ctx.fillStyle = '#202820'; ctx.beginPath(); ctx.roundRect(750, 135, 365, 365, 26); ctx.fill();
-    const board = 0b1010111011010101011110011;
-    for (let i = 0; i < 25; i++) {
-      ctx.fillStyle = board & 1 << i ? '#d4ed93' : '#65735d';
-      ctx.beginPath(); ctx.roundRect(770 + i % 5 * 66, 155 + Math.floor(i / 5) * 66, 61, 61, 10); ctx.fill();
-    }
-    document.body.replaceChildren(canvas); document.body.style.margin = '0';
+    const board = document.querySelector('.garden-board').cloneNode(true);
+    const card = document.createElement('div');
+    card.style.cssText = 'width:1200px;height:630px;display:grid;grid-template-columns:1fr 480px;align-items:center;gap:45px;padding:52px 60px;background:#0b1021;color:#f2eee4;font-family:DM Sans,sans-serif;';
+    const copy = document.createElement('div');
+    copy.innerHTML = '<div style="font-size:24px;color:#edc77c;font-family:Space Grotesk,sans-serif;margin-bottom:60px">Squeek Signal Garden</div><div style="font:500 60px/1.08 Space Grotesk,sans-serif;letter-spacing:-2px">Bring the night<br>to bloom.</div><p style="font-size:21px;line-height:1.5;color:#a9b7ca;margin-top:24px">An original Squeekchain puzzle<br>and stream companion.</p><div style="font-size:16px;color:#a9b7ca;margin-top:50px">3 gardens · 3 minutes · No wallet</div>';
+    const scene = document.createElement('div'); scene.style.cssText = 'background:#141c31;padding:14px;border-radius:22px;'; scene.append(board);
+    card.append(copy, scene); document.body.replaceChildren(card); document.body.style.margin = '0';
+    for (const el of document.querySelectorAll('.tile')) el.classList.remove('selected');
+    const style = document.createElement('style'); style.textContent = '*{animation:none!important;transition:none!important}.tile-coordinate{display:none}'; document.head.append(style);
   });
-  await page.screenshot({ path: 'public/og-image.png', type: 'png' });
-  console.log('Created local 1200 × 630 public/og-image.png');
+  await page.screenshot({ path: 'public/og-image.png', type: 'png', scale: 'css' });
+  console.log('Created 1200×630 share card from the actual solved Demo garden.');
 } finally { await browser?.close(); await preview.close(); }

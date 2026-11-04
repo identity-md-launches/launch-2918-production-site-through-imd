@@ -6,7 +6,7 @@ import { dirname, join, resolve } from 'node:path';
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const dist = resolve('dist');
 const html = await readFile(join(dist, 'index.html'), 'utf8');
-assert(/<title>Blocklight/.test(html));
+assert(/<title>Squeek Signal Garden/.test(html));
 for (const name of ['description', 'og:title', 'og:image']) assert(html.includes(`"${name}"`), `Missing ${name}`);
 assert(/rel="icon"/.test(html));
 const references = [...html.matchAll(/(?:src|href)="([^"]+)"/g)].map(m => m[1]);

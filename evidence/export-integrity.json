@@ -1,0 +1,66 @@
+{
+  "generatedAt": "2026-11-04T02:31:44.794Z",
+  "passed": true,
+  "relativeAssets": true,
+  "shareCard": "1200×630 PNG",
+  "lockfileMatches": true,
+  "distFiles": [
+    {
+      "path": "dist/assets/index-BahOTosM.css",
+      "bytes": 21166,
+      "sha256": "776ad5855851f2970bf66cece2a56b2359164b1268dc39fd89f9acee6971c422"
+    },
+    {
+      "path": "dist/assets/index-CFKWB8xB.js",
+      "bytes": 247201,
+      "sha256": "559b0fefe30a44087b4e8114257520450d8cc8d32c651ce6bc07d1f21e527ea4"
+    },
+    {
+      "path": "dist/favicon.svg",
+      "bytes": 546,
+      "sha256": "f6b4d000520b966942097234085da10d7d0c1385d19380a99085cedc08827be4"
+    },
+    {
+      "path": "dist/fonts/DM-Sans-LICENSE.txt",
+      "bytes": 4502,
+      "sha256": "6fbd040a29c2037a765dfb9f2561e9965b5c95c6dcb5dce516089d63d5f17af7"
+    },
+    {
+      "path": "dist/fonts/Space-Grotesk-LICENSE.txt",
+      "bytes": 4401,
+      "sha256": "18a4de52385f6b988782639d5d0cc1326e5a8c2de9a7f01d7b20d9aedcc60943"
+    },
+    {
+      "path": "dist/fonts/dm-sans-latin-wght-normal.woff2",
+      "bytes": 36932,
+      "sha256": "9fea608a947e67020c33cad9a6fe3d60c54119dfb8cff87768a8117a15ed7543"
+    },
+    {
+      "path": "dist/fonts/space-grotesk-latin-wght-normal.woff2",
+      "bytes": 22288,
+      "sha256": "0640890476fc1198ab4de571fb658de443c4d85b66466ec09534a8737ab1ce9d"
+    },
+    {
+      "path": "dist/index.html",
+      "bytes": 1168,
+      "sha256": "9e8dc4f78654297aa463e55f2ec448df12047b5c8b2db73ca9fc027b4ecd3312"
+    },
+    {
+      "path": "dist/og-image.png",
+      "bytes": 79778,
+      "sha256": "dee12f3a0e006741f832cb01177d726919655b26988c69161d706daa3b42c88e"
+    }
+  ],
+  "pathBytes": {
+    "dist/": 417982,
+    "public/": 148447,
+    "src/": 100357,
+    "tests/": 24445,
+    "scripts/": 43299,
+    "LICENSES/": 11964,
+    "root source, lockfile and documentation": 97257,
+    "evidence/": 1457074
+  },
+  "totalBytes": 2300825,
+  "submissionLimitBytes": 8388608
+}

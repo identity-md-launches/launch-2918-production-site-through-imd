@@ -1,213 +1,201 @@
-import { useEffect, useRef, useState } from 'react';
-import { Board } from './components/Board';
-import { Icon, Mark } from './components/Icon';
-import { Modal } from './components/Modal';
-import { canonicalKey, cellName, createRound, gameReducer, score } from './core/engine';
-import type { GameAction } from './core/engine';
-import type { Origin, PuzzleInput, Round } from './core/types';
-import { addArchive, ARCHIVE_KEY, decodeInput, encodeInput, readArchive, STARTER_ARCHIVE, validateInput, type ArchiveItem } from './data/archive';
-import { exportJSON, exportPNG } from './data/export';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { cellName, createRun, gameReducer, routed, tileName, type Action } from './core/engine';
+import type { Mode, Run, Source } from './core/types';
+import { archiveSource, DEMO_SOURCE, liveKey, liveSource, networkName, sameInstallation, transactionURL } from './data/archive';
 import { useFeed } from './data/useFeed';
-import { RPC_URL } from './data/rpc';
+import { breakContinuity, emptyTracker, freshness, sample } from './data/telemetry';
+import { loadSaved, restoreRun, saveState, STORAGE_KEY } from './data/storage';
+import { exportPNG, overlayURL } from './data/export';
+import { playTone } from './data/sound';
+import { Board } from './components/Board';
+import { Modal } from './components/Modal';
+import { Tutorial } from './components/Tutorial';
+import { Icon } from './components/Icon';
+import { flowerArt, wheelArt } from './components/art';
 
-type Dialog = 'help' | 'source' | 'archive' | 'result' | 'replace' | 'restart' | null;
-const integer = new Intl.NumberFormat('en-US');
-const blockTitle = (input: PuzzleInput) => input.kind === 'demo' ? `Demo ${input.index}` : `Block #${integer.format(input.block.number)}`;
-const demoInput = (index: number): PuzzleInput => ({ version: 1, kind: 'demo', index });
-
-function initialRound(): Round {
-  try {
-    const shared = decodeInput(location.hash);
-    if (shared) return createRound(shared, shared.kind === 'demo' ? 'demo' : 'archive');
-  } catch { /* The effect exposes the malformed-link error. */ }
-  return createRound(demoInput(1), 'demo');
-}
+const modeLabels: Record<Mode, string> = { archive: 'Round Challenge', live: 'Live Garden', demo: 'Demo' };
+const time = (milliseconds: number) => `${Math.floor(Math.ceil(milliseconds / 1000) / 60)}:${String(Math.ceil(milliseconds / 1000) % 60).padStart(2, '0')}`;
+function stamp(iso: string) { return iso ? new Date(iso).toLocaleString('en-GB', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) + ' UTC' : 'Fixed practice fixture'; }
 
 export function App() {
-  const [round, setRound] = useState<Round>(initialRound);
-  const [dialog, setDialog] = useState<Dialog>(null);
-  const [archive, setArchive] = useState<ArchiveItem[]>([]);
-  const [notice, setNotice] = useState('');
-  const [archiveError, setArchiveError] = useState('');
-  const [storageWarning, setStorageWarning] = useState('');
+  const [params] = useState(() => new URLSearchParams(location.search));
+  const overlay = params.get('overlay') === '1';
+  const [controls, setControls] = useState(params.get('controls') !== '0');
+  const [saved] = useState(() => loadSaved());
+  const qmode = params.get('mode') as Mode | null;
+  const initialRun = saved.run && (!qmode || qmode === saved.run.source.mode) && (!params.get('round') || params.get('round') === saved.run.source.round) && (!params.get('tx') || params.get('tx') === saved.run.source.settlement?.transactionHash) ? saved.run : qmode === 'demo' ? createRun(DEMO_SOURCE) : null;
+  const [run, setRun] = useState<Run | null>(initialRun);
+  const [following, setFollowing] = useState(overlay && !!saved.run && initialRun === saved.run);
+  const [mode, setMode] = useState<Mode>(initialRun?.source.mode ?? (qmode && ['archive', 'live', 'demo'].includes(qmode) ? qmode : 'archive'));
+  const [tracker, setTracker] = useState(saved.tracker), trackerRef = useRef(tracker);
+  const [bests, setBests] = useState(saved.bests), [storageWarning, setStorageWarning] = useState(saved.warning);
+  const [panel, setPanel] = useState<'help' | 'about' | 'share' | 'archive' | 'restart' | 'result' | null>(null);
+  const [tutorial, setTutorial] = useState(false), [sound, setSound] = useState(false), [notice, setNotice] = useState('');
+  const [pendingMode, setPendingMode] = useState<Mode | null>(null), [manualCopy, setManualCopy] = useState('');
   const [exporting, setExporting] = useState(false);
-  const [showLink, setShowLink] = useState(false);
   const { feed, retry } = useFeed();
-  const pending = useRef<{ input: PuzzleInput; origin: Origin } | null>(null);
-  const autoLive = useRef(!location.hash.startsWith('#p='));
-  const startButton = useRef<HTMLButtonElement>(null);
-  const demoCount = useRef(round.puzzle.input.kind === 'demo' ? round.puzzle.input.index : 1);
-  const game = (action: GameAction) => setRound(current => gameReducer(current, action));
+  const runRef = useRef(run); runRef.current = run;
+  const currentFreshness = feed.errors.status ? 'unavailable' : freshness(feed.status, feed.now);
+  const compatibleArchive = feed.archive && feed.economy && sameInstallation(feed.archive, feed.economy) ? feed.archive : null;
+  const liveAvailable = !!feed.status && !!feed.economy && feed.status.installationId === feed.economy.installationId && !feed.errors.economy && !feed.errors.status && currentFreshness !== 'stale' && feed.now - Date.parse(feed.economy.generatedAt) <= 180000 && Date.parse(feed.economy.generatedAt) <= feed.now + 30000;
 
+  const updateTracker = useCallback((next: typeof tracker) => { trackerRef.current = next; setTracker(next); }, []);
+  const pin = useCallback((source: Source) => {
+    setRun(createRun(source)); setMode(source.mode); updateTracker(emptyTracker()); setNotice(''); setPanel(null);
+  }, [updateTracker]);
   useEffect(() => {
-    try { const saved = readArchive(localStorage); setArchive(saved.items); if (saved.warning) setStorageWarning(saved.warning); }
-    catch { setStorageWarning('Browser storage is unavailable. Export JSON to keep a puzzle.'); }
-    try { decodeInput(location.hash); } catch (e) { setNotice(e instanceof Error ? e.message : 'Unable to read the puzzle link.'); autoLive.current = false; }
-    const handleHash = () => {
-      try {
-        const input = decodeInput(location.hash);
-        if (input) { autoLive.current = false; pending.current = { input, origin: input.kind === 'demo' ? 'demo' : 'archive' }; setDialog('replace'); }
-      } catch (e) { setNotice(e instanceof Error ? e.message : 'Unable to read the puzzle link.'); }
-    };
-    addEventListener('hashchange', handleHash);
-    return () => removeEventListener('hashchange', handleHash);
-  }, []);
-
-  useEffect(() => {
-    if (feed.status === 'live' && feed.block && autoLive.current) {
-      autoLive.current = false;
-      setRound(createRound({ version: 1, kind: 'block', block: feed.block }, 'live'));
+    if (run) return;
+    if (mode === 'demo') { pin(DEMO_SOURCE); return; }
+    if (mode === 'archive' && compatibleArchive && feed.economy) {
+      const requestedRound = params.get('round'), requestedTx = params.get('tx');
+      const item = requestedRound ? compatibleArchive.items.find(s => s.settledThroughRound === requestedRound && (!requestedTx || s.transactionHash === requestedTx)) : compatibleArchive.items[0];
+      if (item) pin(archiveSource(item, compatibleArchive, feed.economy));
     }
-  }, [feed]);
+    if (mode === 'live' && liveAvailable) pin(liveSource(feed.status!, feed.economy!));
+  }, [run, mode, compatibleArchive, feed.economy, feed.status, params, liveAvailable, pin]);
+
+  const act = useCallback((action: Action) => {
+    const before = runRef.current; if (!before) return;
+    if (action.type === 'start' && before.source.mode === 'live') {
+      if (!feed.status || !feed.economy || !liveAvailable) { setNotice('Fresh wheel and economy samples are needed to start Live Garden. Demo stays available.'); return; }
+      // Pin a new baseline at START, never at page load or from lifetime distance.
+      const source = liveSource(feed.status, feed.economy), fresh = createRun(source);
+      const tracked = sample(emptyTracker(), feed.status, feed.economy, Date.now()); updateTracker(tracked);
+      setRun(gameReducer(fresh, { type: 'start' })); return;
+    }
+    const after = gameReducer(before, action);
+    if (action.type === 'boost' && before.source.mode === 'live' && after.charges !== before.charges) updateTracker({ ...trackerRef.current, charges: after.charges });
+    setRun(after);
+    if (sound && after !== before && ['rotate', 'boost', 'next'].includes(action.type)) playTone(action.type === 'boost' ? 784 : after.phase === 'bloom' ? 659 : 330);
+  }, [feed.status, feed.economy, liveAvailable, sound, updateTracker]);
 
   useEffect(() => {
-    if (round.phase === 'won' || round.phase === 'lost') { setNotice(''); setDialog('result'); }
-  }, [round.phase]);
+    if ((overlay && !controls && following) || !run || run.source.mode !== 'live' || run.phase === 'ready' || ['won', 'lost'].includes(run.phase)) return;
+    const current = trackerRef.current;
+    let next = current;
+    if (feed.errors.status || feed.errors.economy) next = breakContinuity(current);
+    else if (feed.status && feed.economy) next = sample(current, feed.status, feed.economy, feed.now);
+    if (JSON.stringify(next) !== JSON.stringify(current)) {
+      updateTracker(next);
+      if (next.charges !== run.charges) setRun(r => r ? gameReducer(r, { type: 'charges', value: next.charges }) : r);
+    }
+  }, [feed.status, feed.economy, feed.now, feed.errors, run?.source.mode, run?.phase, run?.charges, updateTracker, overlay, controls, following]);
 
-  function save(input: PuzzleInput) {
-    setArchive(current => {
-      const items = addArchive(current, input, Date.now());
-      try { localStorage.setItem(ARCHIVE_KEY, JSON.stringify(items)); }
-      catch { setStorageWarning('This puzzle is saved for this session only. Export JSON to keep it.'); }
-      return items;
-    });
-  }
-  function select(input: PuzzleInput, origin: Origin) {
-    autoLive.current = false;
-    setRound(createRound(input, origin)); setDialog(null); setArchiveError(''); setNotice('Puzzle loaded. Select Play puzzle or any tile to begin.');
-    try { history.replaceState(null, '', `${location.pathname}${location.search}${encodeInput(input)}`); } catch { /* IPFS gateways can restrict history. */ }
-    setTimeout(() => startButton.current?.focus({ preventScroll: true }), 0);
-  }
-  function request(input: PuzzleInput, origin: Origin) {
-    if (canonicalKey(input) === round.puzzle.key) { setNotice('This is already the current puzzle. Restart to try it again.'); setDialog(null); return; }
-    if (round.phase === 'playing' && round.history.length > 0) { pending.current = { input, origin }; setDialog('replace'); }
-    else select(input, origin);
-  }
-  function start() {
-    autoLive.current = false; save(round.puzzle.input); game({ type: 'start' }); setNotice('Round started. Turn every light off.');
-    setTimeout(() => document.querySelector<HTMLButtonElement>('.tile[tabindex="0"]')?.focus({ preventScroll: true }), 0);
-  }
-  function press(cell: number) {
-    if (round.phase === 'ready') { autoLive.current = false; save(round.puzzle.input); game({ type: 'start' }); setNotice('Round started. Turn every light off.'); }
-    game({ type: 'press', cell });
-  }
-  function restart(play = false) {
-    const next = createRound(round.puzzle.input, round.origin);
-    setRound(play ? gameReducer(next, { type: 'start' }) : next); setDialog(null); setNotice(play ? 'New attempt started on the same puzzle.' : 'Puzzle reset. Moves, hints and score have been reset.');
-    setTimeout(() => play ? document.querySelector<HTMLButtonElement>('.tile[tabindex="0"]')?.focus({ preventScroll: true }) : startButton.current?.focus({ preventScroll: true }), 0);
-  }
-  async function png() {
-    setExporting(true);
-    try { await exportPNG(round); setNotice('PNG created. Check your browser downloads.'); }
-    catch (e) { setNotice(e instanceof Error ? e.message : 'Unable to export PNG. Try JSON instead.'); }
-    finally { setExporting(false); }
-  }
-  async function copyLink() {
-    const link = new URL(location.href); link.hash = encodeInput(round.puzzle.input);
-    try { await navigator.clipboard.writeText(link.href); setNotice('Puzzle link copied. It replays the original board, without your moves.'); }
-    catch { setShowLink(true); setNotice('Copy is unavailable here. Select and copy the puzzle link below.'); }
-  }
-  async function importFile(file: File | undefined) {
-    if (!file) return;
-    try {
-      if (file.size > 32_768) throw new Error('Choose an archive smaller than 32 KB.');
-      const payload: unknown = JSON.parse(await file.text());
-      const candidate = payload && typeof payload === 'object' && 'input' in payload ? (payload as Record<string, unknown>).input : payload;
-      const input = validateInput(candidate);
-      setArchiveError(''); request(input, input.kind === 'demo' ? 'demo' : 'archive');
-    } catch (e) { setArchiveError(e instanceof SyntaxError ? 'This file is not valid JSON. Choose an exported Blocklight archive.' : e instanceof Error ? e.message : 'Unable to read this archive.'); }
-  }
+  useEffect(() => {
+    if (!run || run.phase !== 'playing' || panel || tutorial || (overlay && !controls && following)) return;
+    let last = performance.now();
+    const timer = setInterval(() => { const now = performance.now(); const elapsed = now - last; last = now; setRun(r => r ? gameReducer(r, { type: 'tick', elapsed }) : r); }, 250);
+    return () => clearInterval(timer);
+  }, [run?.phase, panel, tutorial, overlay, controls, following]);
+  useEffect(() => {
+    const hidden = () => {
+      if (document.hidden) { setRun(r => r ? gameReducer(r, { type: 'pause' }) : r); updateTracker(breakContinuity(trackerRef.current, 'Tab was hidden. Resume with a new live baseline; no background energy is awarded.')); }
+    };
+    document.addEventListener('visibilitychange', hidden); return () => document.removeEventListener('visibilitychange', hidden);
+  }, [updateTracker]);
+  useEffect(() => {
+    const keydown = (e: KeyboardEvent) => {
+      if (panel || tutorial || !runRef.current || (e.target instanceof HTMLElement && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName))) return;
+      if (e.key.toLowerCase() === 'r' && !(e.target instanceof HTMLElement && e.target.closest('.garden-board'))) { e.preventDefault(); act({ type: 'rotate' }); }
+    };
+    window.addEventListener('keydown', keydown); return () => window.removeEventListener('keydown', keydown);
+  }, [act, panel, tutorial]);
 
-  const active = round.phase === 'playing';
-  const terminal = round.phase === 'won' || round.phase === 'lost';
-  const input = round.puzzle.input;
-  const liveAvailable = feed.status === 'live' && feed.block !== null;
-  const newBlock = liveAvailable && canonicalKey({ version: 1, kind: 'block', block: feed.block! }) !== round.puzzle.key;
-  const sourceLabel = round.origin === 'demo' ? 'Demo · offline practice' : round.origin === 'archive' ? 'Archive · unverified replay' : 'Live snapshot · locked for this round';
-  const feedLabel = { connecting: 'Connecting to Ethereum', live: 'Ethereum feed is live', stale: 'Ethereum feed is stale', unavailable: 'Ethereum API unavailable', paused: 'Ethereum feed paused' }[feed.status];
-  const archiveItems = archive.some(a => canonicalKey(a.input) === canonicalKey(STARTER_ARCHIVE)) ? archive : [...archive, { input: STARTER_ARCHIVE, savedAt: STARTER_ARCHIVE.kind === 'block' ? STARTER_ARCHIVE.block.timestamp * 1000 : 0 }];
-  const link = new URL(location.href); link.hash = encodeInput(input);
+  useEffect(() => {
+    if (!run || !['won', 'lost'].includes(run.phase)) return;
+    if (!(overlay && !controls)) setPanel('result');
+    if (run.phase === 'won') setBests(previous => ({ ...previous, [run.source.mode]: Math.max(previous[run.source.mode] ?? 0, run.score), [run.source.key]: Math.max(previous[run.source.key] ?? 0, run.score) }));
+  }, [run?.phase]);
+  // Saves are throttled to whole seconds, plus every meaningful action, not every clock frame.
+  const savedSecond = run ? Math.ceil(run.remainingMs / 1000) : -1;
+  useEffect(() => {
+    if (overlay && !controls && following) return;
+    if (!saveState(run, trackerRef.current, bests)) setStorageWarning('Local storage is blocked or full. Progress lasts for this visit; PNG export still works.');
+  }, [run?.moves, run?.score, run?.phase, run?.stage, run?.source.key, run?.charges, savedSecond, bests, overlay, controls, following]);
+  useEffect(() => {
+    if (!overlay || controls) return;
+    const sync = (event: StorageEvent) => {
+      if (event.key !== STORAGE_KEY || !event.newValue) return;
+      try { const raw = JSON.parse(event.newValue).run; const next = restoreRun(raw); if (!controls && raw.phase === 'playing') next.phase = 'playing'; if ((!params.get('mode') || next.source.mode === params.get('mode')) && (!params.get('round') || next.source.round === params.get('round'))) { setFollowing(true); setRun(next); updateTracker(breakContinuity({ ...trackerRef.current, charges: next.charges }, 'Stream progress loaded. Resume live accounting with a fresh baseline.')); } } catch { /* Ignore unrelated or corrupt storage events. */ }
+    };
+    window.addEventListener('storage', sync); return () => window.removeEventListener('storage', sync);
+  }, [overlay, params, controls, updateTracker]);
 
-  return <>
-    <a className="skip-link" href="#game">Skip to game</a>
-    <header className="site-header container">
-      <a className="brand" href="./" aria-label="Blocklight home"><Mark /><span>Blocklight</span></a>
-      <div className="header-utilities"><button className="button button-quiet" onClick={() => setDialog('help')}><Icon name="help" />How to play</button></div>
+  const switchMode = (next: Mode) => {
+    if (mode === next) return;
+    if (run && ['playing', 'paused', 'bloom'].includes(run.phase)) { setPendingMode(next); setPanel('restart'); return; }
+    changeMode(next);
+  };
+  const changeMode = (next: Mode) => { setRun(null); setMode(next); updateTracker(emptyTracker()); setPanel(null); setPendingMode(null); setNotice(''); };
+  const restart = () => { if (pendingMode) changeMode(pendingMode); else if (run) { pin(run.source); } };
+  const nextGarden = () => {
+    if (run?.source.mode === 'live' && feed.status && feed.economy && liveAvailable) act({ type: 'next', key: liveKey(feed.status, feed.economy), round: feed.economy.currentRound });
+    else act({ type: 'next' });
+    if (run && run.stage < 2) setTimeout(() => document.querySelector<HTMLButtonElement>('.garden-board [tabindex="0"]')?.focus(), 0);
+  };
+  const png = async () => { if (!run) return; setExporting(true); try { await exportPNG(run); setNotice('Garden PNG exported.'); } catch (error) { setNotice(error instanceof Error ? error.message : 'PNG export failed. Try again.'); } finally { setExporting(false); } };
+  const copy = async () => { const url = overlayURL(run); try { await navigator.clipboard.writeText(url); setNotice('Overlay URL copied. Add it as a 1920 × 1080 browser source.'); setManualCopy(url); } catch { setManualCopy(url); setNotice('Select and copy the overlay URL below.'); } };
+  const reached = run ? routed(run) : [];
+  const canBoost = !!run && ['playing', 'bloom'].includes(run.phase) && run.charges > 0 && reached.includes(run.selected) && !run.boosted.includes(run.selected);
+  const selected = run ? run.tiles[run.selected] : null;
+  const link = run ? transactionURL(run.source) : null;
+  const sourceBadge = mode === 'demo' ? 'Demo · offline practice' : mode === 'archive' ? `Historical round ${run?.boardRound ?? '…'}` : `Live Garden · ${currentFreshness}${run ? ` · round ${run.boardRound}` : ''}`;
+  const preview = run ?? createRun(DEMO_SOURCE);
+  const best = bests[mode] ?? 0;
+  const error = mode === 'archive' ? feed.errors.archive || feed.errors.economy || (feed.archive && feed.economy && !compatibleArchive ? 'Source installations or networks disagree. Retry to load new historical rounds.' : null) : mode === 'live' ? feed.errors.status || feed.errors.economy || (currentFreshness === 'stale' ? 'The wheel sample is stale. Retry the source or practice in Demo.' : null) : null;
+  const sourcePending = !error && (mode === 'archive' ? !feed.archive || !feed.economy : mode === 'live' ? !feed.status || !feed.economy : false);
+
+  return <div className={`app${overlay ? ' overlay-app' : ''}${overlay && !controls ? ' controls-hidden' : ''}`}>
+    <a className="skip-link" href="#garden">Skip to garden</a>
+    <header className="app-header">
+      <a className="brand" href={location.pathname} aria-label="Squeek Signal Garden home"><svg viewBox="0 0 100 100" width="34" height="34" aria-hidden="true" dangerouslySetInnerHTML={{ __html: flowerArt(true, true) }} /><span>Squeek <span>Signal Garden</span></span></a>
+      <nav aria-label="Garden utilities"><button className="quiet-button sound-button" aria-pressed={sound} onClick={() => { setSound(v => !v); if (!sound) playTone(523); }} title="Optional garden sound">Sound {sound ? 'on' : 'off'}</button><button className="quiet-button" onClick={() => setTutorial(true)}><Icon name="help" /><span>How to play</span></button></nav>
     </header>
-    <main id="game" className="container">
-      <div className="intro"><h1>Every block.<br className="desktop-break" /> <span>Lights out.</span></h1><p>A logic puzzle born from<br className="desktop-break" /> an Ethereum block.</p></div>
-      <div className="workspace">
-        <section className="round-controls" aria-label="Round controls">
-          <div className="round-source"><span>{sourceLabel}</span><button className="icon-button" aria-label="Inspect puzzle source" onClick={() => { setShowLink(false); setDialog('source'); }}><Icon name="info" /></button></div>
-          <h2 className="round-name">{blockTitle(input)}</h2>
-          <dl className="metrics"><div><dt>Moves</dt><dd><span data-testid="moves">{round.history.length}</span><span className="metric-total"> / {round.puzzle.limit}</span></dd></div><div><dt>Par</dt><dd>{round.puzzle.par}</dd></div><div><dt>{terminal ? 'Score' : 'Potential'}</dt><dd data-testid="score">{score(round)}</dd></div></dl>
-          {round.phase === 'ready' ? <button className="button button-primary main-action" ref={startButton} onClick={start}>Play puzzle<Icon name="arrow" /></button>
-            : active ? <button className="button button-outline main-action" onClick={() => game({ type: 'hint' })} disabled={round.hintCell !== null}>Show a hint<span>−100 pts</span></button>
-            : <button className="button button-primary main-action" onClick={() => restart(true)}>Play again<Icon name="arrow" /></button>}
-          <p className="round-guidance" role="status" aria-atomic="true">{round.phase === 'ready' ? `All lights off within ${round.puzzle.limit} moves. No time limit.` : round.phase === 'won' ? `Grid cleared in ${round.history.length} moves. Nicely done.` : round.phase === 'lost' ? 'Out of moves. A fresh attempt starts on the same board.' : round.hintCell !== null ? `Hint: flip tile ${cellName(round.hintCell)}. The marked tile is one move in a shortest solution.` : `${round.puzzle.limit - round.history.length} moves left. Take your time.`}</p>
-          {terminal && <button className="text-button" onClick={() => setDialog('result')}>View round result<Icon name="arrow" size={16} /></button>}
-          <div className="score-note"><Icon name="bolt" size={18} /><span>Start at 1,000 points. Keep moves close to par.</span></div>
-        </section>
-        <Board round={round} onPress={press} onUndo={() => { game({ type: 'undo' }); setNotice('Move undone. 50-point penalty applied.'); }} onRestart={() => round.history.length ? setDialog('restart') : restart()} onExport={() => { if (!exporting) void png(); }} />
-        <section className="source-panel" aria-label="Choose a puzzle source">
-          <div className={`feed-status feed-${feed.status}`} role="status"><span className="status-dot" aria-hidden="true" /><span>{feedLabel}</span></div>
-          <p className="feed-detail">{feed.block ? <>Latest: #{integer.format(feed.block.number)}{feed.epoch > 0 ? ` · feed epoch ${feed.epoch}` : ''}<br />{feed.status === 'live' ? newBlock ? 'A new block is ready when you are.' : 'This round stays fixed as blocks arrive.' : feed.status === 'stale' ? 'No fresh block. Your round is safe to continue.' : 'Your current puzzle is still playable.'}</> : feed.status === 'connecting' ? 'Fetching a real block. Demo play is ready below.' : 'Live blocks could not be loaded. Demo and archive play still work.'}</p>
-          <button className="button button-outline source-action" disabled={!liveAvailable || !newBlock} onClick={() => feed.block && request({ version: 1, kind: 'block', block: feed.block }, 'live')}><Icon name="bolt" />Load latest block<Icon name="arrow" size={18} /></button>
-          {(feed.status === 'unavailable' || feed.status === 'stale') && <button className="text-button" onClick={() => { retry(); setNotice('Retrying the Ethereum API. Your board will stay the same.'); }}>Retry API<Icon name="restart" size={16}/></button>}
-          <div className="source-alternatives"><button className="button button-quiet" onClick={() => { demoCount.current = Math.min(1_000_000, demoCount.current + 1); request(demoInput(demoCount.current), 'demo'); }}>Play demo<Icon name="arrow" size={16}/></button><button className="button button-quiet" onClick={() => { setArchiveError(''); setDialog('archive'); }}><Icon name="archive" size={18}/>Open archive</button></div>
-          <p className="source-footnote">Live input changes the next puzzle, never a round in progress. Demo puzzles use no live data.</p>
-        </section>
-      </div>
-      <div className="notice" role="status" aria-live="polite">{notice}</div>
-      {storageWarning && <p className="storage-warning">{storageWarning}</p>}
+    <main id="garden" className="main-layout">
+      <section className="garden-column" aria-label="Signal Garden game">
+        <div className="intro"><h1>Bring the night to bloom.</h1><p>Route the wheel’s energy into four flower beacons.</p></div>
+        <div className="mode-tabs" role="group" aria-label="Game mode">{(['archive', 'live', 'demo'] as Mode[]).map(m => <button key={m} aria-pressed={mode === m} onClick={() => switchMode(m)}>{modeLabels[m]}</button>)}</div>
+        <div className="source-line"><span className={`status-dot ${mode === 'live' ? currentFreshness : mode}`} aria-hidden="true"/><span>{sourceBadge}{overlay ? ` · wheel ${currentFreshness}${run ? ` · ${run.phase}` : ''}` : ''}</span>{mode === 'archive' && <button className="text-button" onClick={() => setPanel('archive')}>Change round <Icon name="arrow" size={14}/></button>}{mode === 'demo' && <span className="source-tail">Fixed fixture</span>}</div>
+        <div className="score-strip" aria-label="Run statistics">
+          <div><span>Garden</span><strong>{(run?.stage ?? 0) + 1}<small> / 3</small></strong></div>
+          <div><span>Time left</span><strong data-testid="timer">{time(run?.remainingMs ?? 180000)}</strong></div>
+          <div><span>Rotations</span><strong data-testid="moves">{run?.moves ?? 0}<small> / {run?.puzzle.limit ?? '–'}</small></strong></div>
+          <div><span>Score</span><strong data-testid="score">{run?.score ?? 0}</strong></div>
+        </div>
+        <div className={`board-scene${!run ? ' board-loading' : ''}${run?.phase === 'bloom' || run?.phase === 'won' ? ' garden-restored' : ''}`}>
+          <div className="board-topline"><span>{['Moonflower court', 'Starlit greenhouse', 'The midnight canopy'][run?.stage ?? 0]}</span><span role="status" aria-live="polite">{reached.length} / 4 connected</span></div>
+          <Board key={`${preview.puzzle.key}:${preview.stage}`} run={preview} disabled={!run || !['playing', 'ready', 'bloom'].includes(run.phase)} onSelect={index => act({ type: 'select', index })} onRotate={() => act({ type: 'rotate' })} />
+          {!run && <div className="board-cover"><span>Garden preview</span><strong>{sourcePending ? mode === 'archive' ? 'Finding a settled round…' : 'Listening for the wheel…' : mode === 'archive' ? 'No safe round loaded' : 'Live source unavailable'}</strong><button className="primary" onClick={() => { changeMode('demo'); pin(DEMO_SOURCE); }}>Play Demo</button></div>}
+          {run?.phase === 'paused' && <div className="board-cover paused-cover"><strong>Garden paused</strong><span>The night can wait.</span><button className="primary" onClick={() => act({ type: 'resume' })}>Resume garden</button></div>}
+        </div>
+        <div className="game-controls">
+          {run?.phase === 'ready' ? <button className="primary start-button" onClick={() => { act({ type: 'start' }); setTimeout(() => document.querySelector<HTMLButtonElement>('.garden-board [tabindex="0"]')?.focus(), 0); }}>Start garden <Icon name="arrow"/></button> : run?.phase === 'bloom' ? <button className="primary" onClick={nextGarden}>{run.stage === 2 ? 'Finish the garden' : 'Next garden'} <Icon name="arrow"/></button> : run?.phase === 'won' || run?.phase === 'lost' ? <button className="primary" onClick={() => setPanel('result')}>View result</button> : run?.phase === 'paused' ? <span className="paused-label">Run paused</span> : <button className="primary" disabled={!run || selected?.kind !== 'conduit'} onClick={() => act({ type: 'rotate' })}><Icon name="restart"/> Rotate <kbd>R</kbd></button>}
+          <button className="boost-button" disabled={!canBoost} onClick={() => act({ type: 'boost' })}><Icon name="bolt"/> Grow <span className="grow-count">{run?.charges ?? 0}</span></button>
+          <button className="icon-button" aria-label={run?.phase === 'paused' ? 'Resume' : 'Pause'} disabled={!run || !['playing', 'paused'].includes(run.phase)} onClick={() => act({ type: run?.phase === 'paused' ? 'resume' : 'pause' })}>{run?.phase === 'paused' ? '▷' : 'Ⅱ'}</button>
+          <button className="icon-button" aria-label="Restart" disabled={!run} onClick={() => { setPendingMode(null); setPanel('restart'); }}><Icon name="restart"/></button>
+        </div>
+        <div className="selection-line"><span>{run ? `${cellName(run.selected)} · ${selected ? tileName(selected) : ''}` : 'Select a mode to begin'}</span><span>{run?.phase === 'bloom' ? 'All connected. Grow a beacon or continue.' : 'Select a tile, then rotate.'}</span></div>
+        <p className="keyboard-tip">Arrow keys move focus · Enter selects · R rotates clockwise</p>
+        <div className="run-extras"><span>Connection streak <strong>{run?.streak ?? 0}</strong></span><span>Combo <strong>×{run?.combo ?? 1}</strong></span><span>Local best <strong>{best.toLocaleString('en')}</strong></span></div>
+        <p className="notice" role="status">{notice}</p>
+        {error && <div className="source-error"><p>{error}</p><button onClick={retry}>Retry source</button>{mode !== 'demo' && <button onClick={() => switchMode('demo')}>Practice in Demo</button>}</div>}
+        {storageWarning && <p className="warning">{storageWarning}</p>}
+      </section>
+      <aside className="garden-aside">
+        <div className="wheel-scene"><svg className={currentFreshness === 'live' ? 'wheel-illustration wheel-running' : 'wheel-illustration'} viewBox="0 0 100 100" role="img" aria-label={currentFreshness === 'live' ? 'Original illustration of a hamster in a wheel; live wheel movement detected' : 'Original illustration of a hamster resting in a wheel'} dangerouslySetInnerHTML={{ __html: wheelArt }}/><div><h2>{currentFreshness === 'idle' ? 'Small paws, quiet night.' : currentFreshness === 'live' ? 'The wheel is turning.' : 'A signal in the dark.'}</h2><p>{currentFreshness === 'idle' ? 'Squeektoshi is resting. The garden is still yours to restore.' : currentFreshness === 'live' ? 'New wheel movement can grow bonus energy in Live Garden.' : 'Live data is unavailable or stale. Historical rounds and Demo stay playable.'}</p></div></div>
+        <section className="reservoir" aria-label="Growth reservoir"><div className="aside-title"><h2>Growth reservoir</h2><strong>{run?.charges ?? 0} / 3</strong></div><div className="charge-slots" aria-hidden="true">{[0, 1, 2].map(i => <span key={i} className={i < (run?.charges ?? 0) ? 'charged' : ''}><Icon name="bolt" size={22}/></span>)}</div><p>{mode === 'live' ? '1 charge per 1,000 new mm with positive work. Baseline power is always on.' : mode === 'archive' ? `${run?.source.settlement?.workAdded ?? '…'} settled work units → ${run?.source.budget ?? '…'} bonus charges for this run.` : '2 practice charges. This fixed fixture uses no live data.'}</p><p className="small-copy">Select a connected flower, then Grow. Each charge is spent once.</p></section>
+        <section className="source-details"><h2>{mode === 'archive' ? 'A moment from the wheel' : mode === 'live' ? 'From the real wheel' : 'Room to practice'}</h2><dl><div><dt>Source</dt><dd>{mode === 'archive' ? 'Historical · API-safe settlement' : mode === 'live' ? 'Provisional telemetry' : 'Deterministic Demo'}</dd></div><div><dt>Network</dt><dd>{networkName(run?.source.network ?? null)}</dd></div><div><dt>Source time</dt><dd>{stamp(mode === 'live' ? feed.status?.measurement.observedAt ?? '' : run?.source.timestamp ?? '')}</dd></div><div><dt>Wheel now</dt><dd>{currentFreshness === 'idle' ? 'Idle · baseline power on' : currentFreshness}</dd></div></dl>{link && <a href={link} target="_blank" rel="noreferrer">View round transaction <Icon name="external" size={16}/></a>}{mode === 'live' && <p className="small-copy">{tracker.note}</p>}<button className="text-button" onClick={() => setPanel('help')}>How it works <Icon name="arrow" size={16}/></button></section>
+        <div className="share-actions"><button onClick={() => setPanel('share')}><Icon name="copy"/> Share / stream</button><button disabled={!run || exporting} onClick={() => void png()}><Icon name="download"/> {exporting ? 'Exporting…' : 'Export garden PNG'}</button></div>
+      </aside>
     </main>
-    <footer className="site-footer container"><button className="text-button" onClick={() => setDialog('source')}>See puzzle source<Icon name="info" size={16}/></button><span>Blocklight · v1</span></footer>
-
-    {dialog === 'help' && <Modal title="How to play" onClose={() => setDialog(null)}>
-      <p>Blocklight is a 5 × 5 Lights Out puzzle. Turn every light off before you run out of moves.</p>
-      <ol className="how-list"><li><strong>Flip a tile.</strong> It changes itself and the tiles directly above, below, left and right. Edges never wrap.</li><li><strong>Think in crosses.</strong> Pressing the same tile twice cancels out. The outlined tiles show what your next press will change.</li><li><strong>Beat par.</strong> Par is the fewest moves needed from the starting board. Every puzzle is solvable, with eight spare moves.</li></ol>
-      <div className="help-example" aria-label="A press flips five tiles in a cross"><div className="mini-grid" aria-hidden="true">{Array.from({ length: 9 }, (_, i) => <span className={[1, 3, 4, 5, 7].includes(i) ? 'mini-on' : ''} key={i}>{i === 4 ? '+' : ''}</span>)}</div><p>One press.<br />A small chain reaction.</p></div>
-      <h3>Points, hints and undo</h3><p>A win starts at 1,000 points. Each move above par costs 40. Each hint costs 100. Undo returns one move and costs 50. A loss scores 0. Restart resets the attempt.</p>
-      <h3>Play your way</h3><p>Tap or click a tile. With a keyboard, Tab to the board, use arrow keys to move, and Space or Enter to flip. There is no timer.</p>
-      <button className="button button-primary full-width" onClick={() => setDialog(null)}>Back to the puzzle<Icon name="arrow"/></button>
-    </Modal>}
-
-    {dialog === 'source' && <Modal title="Inside this puzzle" onClose={() => setDialog(null)} wide>
-      <p>{sourceLabel}. {input.kind === 'demo' ? 'This puzzle is generated from a numbered practice seed. It does not use blockchain data.' : 'The block number and full hash determine the starting board. The board stays fixed for the entire round.'}</p>
-      <dl className="source-data"><div><dt>Puzzle</dt><dd>{blockTitle(input)}</dd></div><div><dt>Engine</dt><dd>v1 · 5 × 5 Lights Out</dd></div><div><dt>Seed</dt><dd><code>{round.puzzle.seed.toString(16).padStart(8, '0')}</code></dd></div>{input.kind === 'block' && <><div><dt>Block time</dt><dd>{new Date(input.block.timestamp * 1000).toISOString().replace('T', ' ').replace('.000Z', ' UTC')}</dd></div><div><dt>Full hash</dt><dd><code className="hash">{input.block.hash}</code></dd></div></>}<div><dt>Canonical input</dt><dd><code className="hash">{round.puzzle.key}</code></dd></div></dl>
-      {input.kind === 'block' && <p className="source-footnote">Archive and shared puzzle headers are replay inputs, not independently verified chain proofs. <a href={`https://etherscan.io/block/${input.block.number}`} target="_blank" rel="noreferrer">Check this block on Etherscan <Icon name="external" size={16}/></a></p>}
-      <div className="export-actions"><button className="button button-primary" disabled={exporting} onClick={() => void png()}><Icon name="download"/>{exporting ? 'Creating PNG…' : 'Save PNG'}</button><button className="button button-outline" onClick={() => { exportJSON(round); setNotice('JSON created. Import it from the archive to replay the original board.'); }}><Icon name="download"/>Export JSON</button><button className="button button-outline" onClick={() => void copyLink()}><Icon name="copy"/>Copy puzzle link</button></div>
-      {showLink && <div className="link-label"><label htmlFor="puzzle-link">Puzzle link</label><textarea id="puzzle-link" readOnly value={link.href} onFocus={e => e.currentTarget.select()} rows={4}/></div>}
-      <p className="modal-notice" role="status">{notice}</p>
-      <details className="technical-details"><summary>How live input works</summary><p>The Ethereum feed polls every 12 seconds. Repeated samples do not create new puzzles. A regression or conflicting adjacent block starts a new feed epoch. After 60 seconds without a changed header, the feed is stale. Frozen rounds and archive replays stay playable.</p><p>Public API: <a href="https://ethereum.publicnode.com/" target="_blank" rel="noreferrer">PublicNode Ethereum</a><br /><code className="hash">{RPC_URL}</code></p><p>No account, wallet, analytics or transaction is required. Up to 30 started puzzles are stored in this browser only.</p></details>
-    </Modal>}
-
-    {dialog === 'archive' && <Modal title="Replay a block" onClose={() => setDialog(null)} wide>
-      <p>Started puzzles are saved in this browser only. Replays restore the original board with a fresh attempt. One recorded Ethereum block is included to try offline.</p>
-      <label className="button button-outline import-button"><Icon name="download"/>Import JSON<input type="file" accept=".json,application/json" onChange={e => { void importFile(e.target.files?.[0]); e.target.value = ''; }}/></label>
-      {archiveError && <p className="field-error" role="alert">{archiveError}</p>}
-      <ul className="archive-list">{archiveItems.map(item => <li key={canonicalKey(item.input)}><button onClick={() => request(item.input, item.input.kind === 'demo' ? 'demo' : 'archive')}><span><strong>{blockTitle(item.input)}</strong><span>{item.input.kind === 'demo' ? 'Demo · offline practice' : 'Archive · unverified replay'}</span></span><Icon name="arrow"/></button></li>)}</ul>
-      <p className="source-footnote">Keep an archive beyond this browser with Export JSON in the source details. Imported metadata never sets your board or score.</p>
-    </Modal>}
-
-    {dialog === 'result' && <Modal title={round.phase === 'won' ? 'Lights out. Well played.' : 'Out of moves.'} onClose={() => setDialog(null)}>
-      <div className={`result-symbol ${round.phase === 'won' ? 'result-win' : ''}`}><Icon name={round.phase === 'won' ? 'check' : 'restart'} size={34}/></div>
-      <p>{round.phase === 'won' ? `You cleared ${blockTitle(input).toLowerCase()} in ${round.history.length} moves. Par was ${round.puzzle.par}.` : `The grid still has lights on after ${round.puzzle.limit} moves. The same puzzle is solvable in ${round.puzzle.par}. Give it another try.`}</p>
-      <div className="result-score"><span>{integer.format(score(round))}</span><span>points · {round.origin === 'demo' ? 'Demo' : round.origin === 'archive' ? 'Archive replay' : 'Live snapshot'}</span></div>
-      <p className="source-footnote">{round.hints} hints · {round.undos} undos. Scores belong to this attempt and are not a shared leaderboard.</p>
-      <button className="button button-primary full-width" onClick={() => restart(true)}>Play again<Icon name="restart"/></button>
-      <div className="export-actions"><button className="button button-outline" disabled={exporting} onClick={() => void png()}><Icon name="download"/>{exporting ? 'Creating PNG…' : 'Save PNG'}</button><button className="button button-outline" onClick={() => { setShowLink(false); setDialog('source'); }}>See puzzle source<Icon name="info"/></button></div>
-      <p className="modal-notice" role="status">{notice}</p>
-    </Modal>}
-
-    {dialog === 'replace' && <Modal title="Load a different puzzle?" onClose={() => { pending.current = null; setDialog(null); }}>
-      <p>This starts a fresh round and clears your current moves. The current puzzle remains in this browser’s archive if you started it.</p>
-      <div className="export-actions"><button className="button button-primary" onClick={() => { if (pending.current) { const next = pending.current; pending.current = null; select(next.input, next.origin); } }}>Load puzzle<Icon name="arrow"/></button><button className="button button-outline" onClick={() => { pending.current = null; setDialog(null); }}>Keep playing</button></div>
-    </Modal>}
-
-    {dialog === 'restart' && <Modal title="Restart this puzzle?" onClose={() => setDialog(null)}>
-      <p>Your moves, hints and undo penalties will reset. The starting board and par stay the same.</p>
-      <div className="export-actions"><button className="button button-primary" onClick={() => restart()}>Restart puzzle<Icon name="restart"/></button><button className="button button-outline" onClick={() => setDialog(null)}>Keep playing</button></div>
-    </Modal>}
-  </>;
+    <footer><span>A little garden on Squeekchain.</span><div><button className="text-button" onClick={() => setPanel('about')}>About</button><a href="https://squeekchain.com/genesis/code" target="_blank" rel="noreferrer">Genesis Code <Icon name="external" size={14}/></a></div></footer>
+    {overlay && <button className="overlay-toggle" onClick={() => { if (!controls) setFollowing(false); setControls(v => !v); }}>{controls ? 'Hide controls' : 'Show controls'}</button>}
+    {tutorial && <Tutorial onClose={() => setTutorial(false)}/>}
+    {panel === 'help' && <Modal title="How the signal grows" onClose={() => setPanel(null)} wide><p>Join the wheel to all four flowers. Select a conduit, then Rotate or press R. Stones and ferns stay fixed. Each board has a rotation limit; finish three gardens within three minutes of active play. Pause and dialogs stop the clock.</p><h3>Three ways to play</h3><p><strong>Round Challenge:</strong> a historical settlement labelled safe or finalized by the public API, with positive work. Its transaction hash + round + actual chain seed every board. Charges = min(3, 1 + floor(workAdded / 250)). Rounds need not be contiguous.</p><p><strong>Live Garden:</strong> pin installation, release, chain, epoch and a fresh source baseline at Start. Every 1,000 new millimetres paired with positive new work earns one charge, capped at 3. Overflow is discarded. Repeats and old timestamps earn nothing; counter resets, stale data, source changes, hiding and reconnects rebaseline without awarding history. A round change seeds only the next board.</p><p><strong>Demo:</strong> the fixed moonflower fixture, 2 practice charges, separate local best. No synthetic values are presented as live.</p><h3>Source right now</h3><dl className="detail-list"><div><dt>Wheel status</dt><dd>{currentFreshness}</dd></div><div><dt>Observed at</dt><dd>{feed.status?.measurement.observedAt ?? 'Not received'}</dd></div><div><dt>Generated at</dt><dd>{feed.status?.generatedAt ?? 'Not received'}</dd></div><div><dt>Freshness limit</dt><dd>{feed.status?.measurement.staleAfterSeconds ?? '–'} seconds</dd></div><div><dt>Network</dt><dd>{networkName(feed.economy?.chain ?? null)}</dd></div><div><dt>Pinned baseline</dt><dd>{run?.source.mode === 'live' ? `${run.source.timestamp} · epoch ${run.source.epoch} · ${run.source.baselineDistanceMm ?? 'unknown'} mm · ${run.source.baselineWork ?? 'unknown'} work units` : 'Start Live Garden to pin a baseline.'}</dd></div><div><dt>Energy note</dt><dd>{tracker.note}</dd></div></dl><p>Status is polled every 10 seconds; economy and archive every 60 seconds. Requests are serialized, time out after 8 seconds, back off on failure and honor Retry-After. Hidden tabs suspend requests. Telemetry is provisional; optimistic builder projections are never treated as settled chain state.</p><h3>Points, fairly local</h3><p>First connection per flower: 100 × combo. Consecutive connecting rotations build a combo up to ×4; other rotations reset it. A cleared board adds 400 + 5 per spare rotation. Grow adds 150 once per flower. A full win adds 2 per second left. Reconnecting a flower cannot farm points. Bests are saved only on this browser, separately for each mode.</p><button className="primary" onClick={() => { setPanel(null); setTutorial(true); }}>Try the interactive tutorial</button></Modal>}
+    {panel === 'about' && <Modal title="A garden with a real heartbeat" onClose={() => setPanel(null)}><p>Squeek Signal Garden is an original browser puzzle and stream companion for Squeekchain Genesis Code. The live wheel’s new distance can grant optional growth charges; safe historical settlements make reproducible round challenges.</p><p>It reads only Squeekchain’s public status, economy and settlements APIs. The network label comes from those APIs. Scores and progress stay on this device. There are no accounts, wallet signatures, contracts, token rewards or financial promises.</p><p>This is an independent creation, with original SVG garden and hamster artwork. No official endorsement is claimed.</p><div className="modal-actions"><a href="https://squeekchain.com" target="_blank" rel="noreferrer">Visit Squeekchain <Icon name="external" size={16}/></a><a href="https://squeekchain.com/genesis/code" target="_blank" rel="noreferrer">Read Genesis Code <Icon name="external" size={16}/></a></div></Modal>}
+    {panel === 'share' && <Modal title="Let the garden join your stream" onClose={() => setPanel(null)}><p>Add the overlay URL as a 1920 × 1080 browser source. It renders this game in a 16:9 garden scene, with mode, round and freshness visible. Controls can be shown at any time.</p><p>Tabs in this browser share local progress. A separate OBS profile opens the same pinned challenge as a fresh playable game; it does not receive this browser’s moves. Historical URLs need that round in the API’s available archive, or a saved local run.</p><div className="modal-actions"><button className="primary" onClick={() => void copy()}><Icon name="copy"/> Copy overlay URL</button><a className="button-link" href={overlayURL(run)} target="_blank" rel="noreferrer">Open overlay <Icon name="external" size={16}/></a></div>{manualCopy && <label className="copy-field">Overlay URL · select and copy<textarea readOnly value={manualCopy} onFocus={e => e.currentTarget.select()} /></label>}<button disabled={!run || exporting} onClick={() => void png()}><Icon name="download"/> Export garden PNG</button><p className="small-copy" role="status">{notice}</p></Modal>}
+    {panel === 'archive' && <Modal title="Choose a historical round" onClose={() => setPanel(null)}><p>Only safe or finalized settlements with positive work are playable. These are past rounds, not live activity.</p>{compatibleArchive?.items.length ? <div className="archive-list">{compatibleArchive.items.map(item => <button key={item.transactionHash} onClick={() => { if (run && ['playing', 'paused', 'bloom'].includes(run.phase) && !window.confirm('Replace the current run with this historical round?')) return; pin(archiveSource(item, compatibleArchive, feed.economy!)); }}><strong>Round {item.settledThroughRound}</strong><span>{item.workAdded} work · {stamp(item.blockTimestamp)}</span><Icon name="arrow" size={16}/></button>)}</div> : <p>No safe positive-work settlements loaded. Retry the source or practice in Demo.</p>}<button onClick={retry}>Refresh available rounds</button><p className="small-copy">{feed.errors.archive || feed.errors.economy}</p></Modal>}
+    {panel === 'restart' && <Modal title={pendingMode ? 'Change the garden mode?' : 'Restart this run?'} onClose={() => { setPanel(null); setPendingMode(null); }}><p>{pendingMode ? 'This ends the current attempt and opens the selected mode.' : 'The same source and initial board return. Score, timer and charges reset; Live Garden starts with a fresh baseline.'}</p><div className="modal-actions"><button className="primary" onClick={restart}>{pendingMode ? 'Change mode' : 'Restart run'}</button><button onClick={() => { setPanel(null); setPendingMode(null); }}>Keep playing</button></div></Modal>}
+    {panel === 'result' && run && <Modal title={run.phase === 'won' ? 'The night is in bloom.' : 'The garden will wait.'} onClose={() => setPanel(null)}><div className="result-flowers" aria-hidden="true">{[0, 1, 2, 3].map(i => <svg key={i} viewBox="0 0 100 100" dangerouslySetInnerHTML={{ __html: flowerArt(run.phase === 'won', i === 1 && run.phase === 'won') }}/>)}</div><p>{run.phase === 'won' ? 'Three gardens restored before dawn.' : run.lossReason} {modeLabels[run.source.mode]} · {run.source.mode === 'demo' ? 'offline practice' : `round ${run.source.round}`}.</p><div className="result-score"><span>{run.phase === 'won' ? 'Final score' : 'Points this attempt'}</span><strong>{run.score.toLocaleString('en')}</strong><span>{run.completed} / 3 gardens · local best {Math.max(best, run.phase === 'won' ? run.score : 0)}</span></div><div className="modal-actions"><button className="primary" onClick={() => pin(run.source)}>Play again <Icon name="restart"/></button><button disabled={exporting} onClick={() => void png()}>Export garden PNG</button></div></Modal>}
+  </div>;
 }

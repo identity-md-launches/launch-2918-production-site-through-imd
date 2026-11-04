@@ -1,73 +1,87 @@
-import { canonicalKey } from '../core/engine';
-import type { PuzzleInput } from '../core/types';
-import { HASH } from './rpc';
+import type { Network, Settlement, Source } from '../core/types';
 
-export const ARCHIVE_KEY = 'blocklight.archive.v1';
-export const ARCHIVE_LIMIT = 30;
-export interface ArchiveItem { input: PuzzleInput; savedAt: number }
-
-// Real header read on 2026-11-03. It is an archive fixture, never a live fallback.
-export const STARTER_ARCHIVE: PuzzleInput = {
-  version: 1, kind: 'block', block: {
-    number: 26334137,
-    hash: '0x73c0561f039f4a34ba4f92aa094f2932c0370174e6a1271154cb4cd5f9ca316d',
-    parentHash: '0x3e9df9f395e9c93e5f4d6df5ebee39e26c3ad624ba0aea030718b9a81f566f1a',
-    timestamp: 1793707247,
-  },
-};
-
-export function validateInput(value: unknown): PuzzleInput {
-  if (!value || typeof value !== 'object') throw new Error('Choose a Blocklight v1 archive file.');
-  const v = value as Record<string, unknown>;
-  if (v.version !== 1) throw new Error('This archive uses an unsupported game version. Use a v1 archive.');
-  if (v.kind === 'demo' && Number.isSafeInteger(v.index) && Number(v.index) >= 1 && Number(v.index) <= 1_000_000) {
-    return { version: 1, kind: 'demo', index: Number(v.index) };
+export const API = 'https://api.squeekchain.com/v1';
+export const DECIMAL = /^(0|[1-9][0-9]{0,79})$/;
+export const HASH = /^0x[0-9a-fA-F]{64}$/;
+function object(v: unknown): Record<string, unknown> {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) throw new Error('The API returned an incomplete object.');
+  return v as Record<string, unknown>;
+}
+function string(v: unknown): string { if (typeof v !== 'string' || !v.length || v.length > 256) throw new Error('The API returned an invalid identifier.'); return v; }
+function decimal(v: unknown): string { if (typeof v !== 'string' || !DECIMAL.test(v)) throw new Error('The API returned an invalid counter.'); return v; }
+function date(v: unknown): string { const s = string(v); if (!/^\d{4}-\d{2}-\d{2}T/.test(s) || !Number.isFinite(Date.parse(s))) throw new Error('The API returned an invalid timestamp.'); return s; }
+function integer(v: unknown): number { if (!Number.isSafeInteger(v) || Number(v) < 0) throw new Error('The API returned an invalid measurement.'); return Number(v); }
+export interface Status {
+  installationId: string; generatedAt: string;
+  measurement: { freshness: string; observedAt: string; staleAfterSeconds: number; counterEpoch: string; cumulativeWorkUnits: string; coreStatus: string; rpmMilli: number; speedMmPerSecond: number; distanceMm: number };
+}
+export interface Economy { installationId: string; generatedAt: string; status: string; chain: Network; currentRound: string; releaseId: string }
+export interface Archive { installationId: string; generatedAt: string; chain: Network; items: Settlement[] }
+export function parseNetwork(v: unknown): Network {
+  const n = object(v); const chainId = decimal(n.chainId); if (chainId === '0') throw new Error('The API returned an invalid chain.');
+  return { target: string(n.target), chainId };
+}
+export function parseStatus(v: unknown): Status {
+  const root = object(v), m = object(root.measurement);
+  if (root.schemaVersion !== 1) throw new Error('Unsupported status schema.');
+  const staleAfterSeconds = integer(m.staleAfterSeconds);
+  if (staleAfterSeconds < 1 || staleAfterSeconds > 86400) throw new Error('Invalid freshness window.');
+  return { installationId: string(root.installationId), generatedAt: date(root.generatedAt), measurement: {
+    freshness: string(m.freshness), observedAt: date(m.observedAt), staleAfterSeconds,
+    counterEpoch: string(m.counterEpoch), cumulativeWorkUnits: decimal(m.cumulativeWorkUnits),
+    coreStatus: string(m.coreStatus), rpmMilli: integer(m.rpmMilli), speedMmPerSecond: integer(m.speedMmPerSecond), distanceMm: integer(m.distanceMm),
+  } };
+}
+export function parseEconomy(v: unknown): Economy {
+  const root = object(v), lifecycle = object(root.lifecycle), release = object(root.release);
+  if (root.schemaVersion !== 2 || root.status !== 'available') throw new Error('Squeekchain economy is unavailable.');
+  return { installationId: string(root.installationId), generatedAt: date(root.generatedAt), status: 'available', chain: parseNetwork(root.chain), currentRound: decimal(lifecycle.currentRound), releaseId: string(release.id) };
+}
+export function parseSettlement(v: unknown): Settlement {
+  const s = object(v), hash = string(s.transactionHash);
+  if (!HASH.test(hash) || /^0x0+$/.test(hash) || !['safe', 'finalized'].includes(String(s.confirmationStatus))) throw new Error('This settlement is not safe.');
+  const workAdded = decimal(s.workAdded), cumulativeWork = decimal(s.cumulativeWork);
+  if (BigInt(workAdded) <= 0n || BigInt(cumulativeWork) < BigInt(workAdded)) throw new Error('This round has no usable work.');
+  return { transactionHash: hash.toLowerCase(), settledThroughRound: decimal(s.settledThroughRound), workAdded, cumulativeWork, confirmationStatus: s.confirmationStatus as 'safe' | 'finalized', blockTimestamp: date(s.blockTimestamp) };
+}
+export function parseArchive(v: unknown): Archive {
+  const root = object(v);
+  if (root.schemaVersion !== 3 || root.status !== 'available' || !Array.isArray(root.recentSettlements)) throw new Error('Historical rounds are unavailable.');
+  const seen = new Set<string>(), items: Settlement[] = [];
+  for (const raw of root.recentSettlements.slice(0, 200)) {
+    try {
+      const item = parseSettlement(raw);
+      if (Date.parse(item.blockTimestamp) > Date.parse(date(root.generatedAt)) + 30000) continue;
+      const key = `${item.transactionHash}|${item.settledThroughRound}`;
+      if (!seen.has(key)) { seen.add(key); items.push(item); }
+    } catch { /* Pending, idle and malformed entries are deliberately not playable. */ }
   }
-  if (v.kind === 'block' && v.block && typeof v.block === 'object') {
-    const b = v.block as Record<string, unknown>;
-    if (Number.isSafeInteger(b.number) && Number(b.number) >= 0 &&
-        Number.isSafeInteger(b.timestamp) && Number(b.timestamp) >= 1438269973 && Number(b.timestamp) <= 8_640_000_000_000 &&
-        typeof b.hash === 'string' && HASH.test(b.hash) && !/^0x0+$/.test(b.hash)) {
-      return { version: 1, kind: 'block', block: { number: Number(b.number), hash: b.hash.toLowerCase(), timestamp: Number(b.timestamp) } };
-    }
-  }
-  throw new Error('This archive is incomplete. Choose an exported Blocklight JSON file.');
+  items.sort((a, b) => BigInt(a.settledThroughRound) > BigInt(b.settledThroughRound) ? -1 : BigInt(a.settledThroughRound) < BigInt(b.settledThroughRound) ? 1 : a.transactionHash.localeCompare(b.transactionHash));
+  return { installationId: string(root.installationId), generatedAt: date(root.generatedAt), chain: parseNetwork(root.chain), items };
 }
-
-export function readArchive(storage: Pick<Storage, 'getItem'>): { items: ArchiveItem[]; warning: string | null } {
-  try {
-    const text = storage.getItem(ARCHIVE_KEY);
-    if (!text) return { items: [], warning: null };
-    if (text.length > 100_000) throw new Error('Archive is too large.');
-    const items = JSON.parse(text) as unknown;
-    if (!Array.isArray(items)) throw new Error('Invalid archive.');
-    const seen = new Set<string>();
-    const parsed = items.slice(0, ARCHIVE_LIMIT).map((v: unknown) => {
-      if (!v || typeof v !== 'object') throw new Error('Invalid archive.');
-      const item = v as Record<string, unknown>;
-      if (!Number.isSafeInteger(item.savedAt) || Number(item.savedAt) < 0) throw new Error('Invalid date.');
-      return { input: validateInput(item.input), savedAt: Number(item.savedAt) };
-    }).filter(item => { const key = canonicalKey(item.input); if (seen.has(key)) return false; seen.add(key); return true; });
-    return { items: parsed, warning: null };
-  } catch { return { items: [], warning: 'Saved puzzles could not be read. You can still play and import an archive.' }; }
+export function sameInstallation(archive: Archive, economy: Economy): boolean {
+  return archive.installationId === economy.installationId && archive.chain.chainId === economy.chain.chainId && archive.chain.target === economy.chain.target;
 }
-
-export function addArchive(items: ArchiveItem[], input: PuzzleInput, now: number): ArchiveItem[] {
-  return [{ input, savedAt: now }, ...items.filter(i => canonicalKey(i.input) !== canonicalKey(input))].slice(0, ARCHIVE_LIMIT);
+export function energyBudget(work: string): number { return Number(1n + (BigInt(work) / 250n > 2n ? 2n : BigInt(work) / 250n)); }
+export function archiveSource(item: Settlement, archive: Archive, economy: Economy): Source {
+  if (!sameInstallation(archive, economy)) throw new Error('The API installation or network changed. Refresh the round list.');
+  return { mode: 'archive', key: `signal-garden/v1|archive|${archive.chain.chainId}|${item.transactionHash}|${item.settledThroughRound}`, round: item.settledThroughRound,
+    timestamp: item.blockTimestamp, network: archive.chain, installationId: archive.installationId, releaseId: economy.releaseId, epoch: '', budget: energyBudget(item.workAdded), settlement: item };
 }
-
-export function encodeInput(input: PuzzleInput): string {
-  return input.kind === 'demo' ? `#p=1.d.${input.index}`
-    : `#p=1.b.${input.block.number}.${input.block.hash.slice(2)}.${input.block.timestamp}`;
+export const DEMO_SOURCE: Source = { mode: 'demo', key: 'signal-garden/v1|demo|moonflower', round: 'practice', timestamp: '', network: null, installationId: '', releaseId: '', epoch: '', budget: 2 };
+export function liveSource(status: Status, economy: Economy): Source {
+  if (status.installationId !== economy.installationId) throw new Error('Status and economy installations disagree. Retry before starting Live Garden.');
+  return { mode: 'live', key: liveKey(status, economy), round: economy.currentRound, timestamp: status.measurement.observedAt, network: economy.chain,
+    installationId: status.installationId, releaseId: economy.releaseId, epoch: status.measurement.counterEpoch, budget: 0, baselineDistanceMm: status.measurement.distanceMm, baselineWork: status.measurement.cumulativeWorkUnits };
 }
-export function decodeInput(hash: string): PuzzleInput | null {
-  if (!hash.startsWith('#p=')) return null;
-  if (hash.length > 256) throw new Error('This puzzle link is too long. Open an exported v1 puzzle link.');
-  const parts = hash.slice(3).split('.');
-  if (parts[0] !== '1') throw new Error('This puzzle link uses an unsupported version.');
-  if (parts[1] === 'd' && parts.length === 3 && /^\d+$/.test(parts[2])) return validateInput({ version: 1, kind: 'demo', index: Number(parts[2]) });
-  if (parts[1] === 'b' && parts.length === 5 && /^\d+$/.test(parts[2]) && /^\d+$/.test(parts[4])) {
-    return validateInput({ version: 1, kind: 'block', block: { number: Number(parts[2]), hash: `0x${parts[3]}`, timestamp: Number(parts[4]) } });
-  }
-  throw new Error('This puzzle link is incomplete. Ask for a new exported link.');
+export function liveKey(status: Status, economy: Economy): string {
+  return `signal-garden/v1|live|${economy.chain.chainId}|${status.installationId}|${economy.releaseId}|${status.measurement.counterEpoch}|${economy.currentRound}`;
+}
+export function networkName(network: Network | null): string {
+  return network ? `${network.target === 'sepolia' ? 'Sepolia testnet' : network.target} · ${network.chainId}` : 'Offline practice';
+}
+export function transactionURL(source: Source): string | null {
+  if (!source.settlement) return null;
+  const base = ({ '11155111': 'https://sepolia.etherscan.io', '1': 'https://etherscan.io', '8453': 'https://basescan.org', '42161': 'https://arbiscan.io' } as Record<string, string>)[source.network?.chainId ?? ''];
+  return base ? `${base}/tx/${source.settlement.transactionHash}` : null;
 }

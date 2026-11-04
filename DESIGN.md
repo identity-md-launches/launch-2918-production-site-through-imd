@@ -1,120 +1,106 @@
-# Blocklight design system
+# Squeek Signal Garden design system
 
 ## Overview
 
-Blocklight is a small logic game for mouse, keyboard and touch players. Its single visual idea is a panel of square light switches: an ivory page, one charcoal board, sage unlit tiles and pale lime lit tiles. The board is the product. Source transparency and score controls support it without a marketing screen or extra navigation.
+A browser puzzle and stream companion for people restoring a night garden in short sessions. One visual idea carries the page: warm gold signal conduits growing cyan flowers on deep indigo ground. The game board receives the largest surface; a small original hamster wheel, reservoir and source provenance support it. There is no marketing landing screen or dashboard-first hierarchy.
 
-The implemented source of truth is `src/styles/app.css`; page composition is in `src/App.tsx`. The one display heading, flat surfaces, quiet utility actions and compact source information should carry through any extension. These are implementation choices made for this assignment, not a preexisting requester brand.
+The source of truth is `src/styles/app.css`, with procedural illustration in `src/components/art.ts` and composition in `src/App.tsx`. The existing local font files and native-dialog foundation were retained. This document describes the implemented Squeek Signal Garden, replacing the preceding product's visual system.
 
 ## Colors
 
-Primitives are declared at `src/styles/app.css:5`; component rules use semantic role tokens.
+CSS tokens are declared in `src/styles/app.css:3`. The single intentional dark theme uses sRGB hex values and `color-scheme: dark`.
 
-| Semantic token | Value | Intended role |
+| Token | Value | Role |
 | --- | --- | --- |
-| `--color-bg` | `#f4f5ed` | Page, dialog surface, light board focus/marker ink |
-| `--color-surface` | `#e8ebdf` | Quiet control hover, help illustration backing, textarea |
-| `--color-text` | `#202820` | Primary ink and button text |
-| `--color-muted` | `#535f4c` | Instructions, secondary labels, metadata |
-| `--color-border` | `#d3d8c9` | Structural separators and neutral control outlines |
-| `--color-accent` | `#d4ed93` | Lit switches and the primary action fill |
-| `--color-accent-hover` | `#c1dd76` | Primary action hover |
-| `--color-board` | `#202820` | Game frame; dark ink on lit switches |
-| `--color-tile-off` | `#65735d` | Unlit switch fill |
-| `--color-board-text` | `#d9dfd0` | Frame labels and counts |
-| `--color-focus` | `#315c08` | Focus outline on the ivory surface |
-| `--color-warning` | `#80521f` | Stale/unavailable API and storage warnings |
-| `--color-error` | `#a73d33` | Recoverable import error text |
+| `--color-bg` | `#0b1021` | Night ground/page and form backing |
+| `--color-surface` | `#141c31` | Board bed, modal and quiet surfaces |
+| `--color-tile` | `#1c2640` | Unpowered conduit tiles |
+| `--color-tile-powered` | `#24313f` | Powered tile backing |
+| `--color-text` | `#f2eee4` | Primary text |
+| `--color-muted` | `#a9b7ca` | Instructions, secondary data and labels |
+| `--color-border` | `#46536c` | Structural control outlines |
+| `--color-accent` | `#edc77c` | Primary action, selected tile, charge accents |
+| `--color-accent-hover` | `#f6d99f` | Primary action hover |
+| `--color-signal` | `#91dfd3` | Connected flowers and informative success/link accents |
+| `--color-error` | `#f1af9e` | Recoverable unavailable-source/storage errors |
+| `--color-focus` | `#f7e8bd` | Visible keyboard focus perimeter |
+| `--color-ink` | `#151b28` | Dark text on the warm primary action |
 
-There is one intentionally light theme. Do not add an unused theme ramp. Every feed state has text and a dot treatment; lights have filled versus outlined center marks and `aria-pressed`, so state is not conveyed by hue alone. Affected lit tiles use a dark inset outline; affected unlit tiles use light ink. Board focus and hint outlines sit outside the tiles against the dark frame.
+Artwork uses the same family of colors as explicit SVG literals so the screen and SVG/canvas PNG share the exact drawing code. `tileArt`, `flowerArt` and `wheelArt` in `src/components/art.ts` own that palette: gold `#f0ce86` signal cores, `#8592ac` dormant cores, cyan `#91dfd3` flowers, and warm tan hamster shapes. These literals are illustration details, not a second UI theme.
 
-Actual computed solid pairs were measured in Chromium: primary ink/page **13.805:1**, muted ink/page **6.153:1**, frame labels/frame **11.125:1**, off-tile boundary/frame **3.005:1**, off marker/hint ink/tile **4.595:1**, primary button ink/fill **11.787:1**, outline hint button ink/page **13.805:1**, board focus/frame **13.805:1**. The 2026-11-03 revision re-measured these with `npm run test:browser` (WebKit could not launch on that machine); the per-pair table is in `README.md` under Validation. Disabled controls are intentionally dimmed. The translucent modal backdrop is decorative; text is on the opaque dialog surface. These measurements do not establish every possible user color preference.
+Color has redundant cues: selection has a perimeter and coordinate tag; power adds a leaf and explicit accessible name; flowers show a check mark; growth adds a plus/star; stones have a distinct polygon silhouette. Live, idle, stale, historical and Demo states are spelled out. The current connection count is a polite status region. No token/reward color semantics are implied.
+
+Final rendered solid-pair measurements in Chromium: primary text/page **16.325:1**, secondary text/surface **8.316:1**, primary label/fill **10.712:1**, focus/surface **13.895:1**. The pinned probe passed measured text contrast. Decorative SVG art, all transparency combinations and forced user themes were not certified by those numbers.
 
 ## Typography
 
-Two local Latin variable WOFF2 fonts, both with their original OFL notices:
+Two local Latin variable WOFF2 families, loaded from `public/fonts/` with their existing OFL notices:
 
-- **DM Sans**, `public/fonts/dm-sans-latin-wght-normal.woff2`, CSS range 100–1000; body, controls and data labels. Fallback: `sans-serif`.
-- **Space Grotesk**, `public/fonts/space-grotesk-latin-wght-normal.woff2`, CSS range 300–700; brand and headings. Fallback: `sans-serif`.
-- Hashes and seed keys alone use `ui-monospace, SFMono-Regular, Consolas, monospace`. No monospace prose or extra font download.
+- **Space Grotesk**, weights available 300–700: brand, headings, score/timer values. Fallback `sans-serif`.
+- **DM Sans**, weights available 100–1000: body, controls, labels and provenance. Fallback `sans-serif`.
 
-The used weights are **400, 500 and 600**, with `font-synthesis: none`. Font loading was checked in the rendered production export. The global type scale contains six tokens:
+The interface uses **400, 500 and 600** only. `font-synthesis: none` is set on the root. Both local fonts were observed loaded in production. There is no remote font request and no monospace prose.
 
-| Token | Size at the default root | Role |
+| Token | Default size | Use |
 | --- | --- | --- |
-| `--text-xs` | .8125rem / 13px | Metadata, source labels, mobile instructions, code |
-| `--text-sm` | .9375rem / 15px | Utility controls, prose, instructions |
-| `--text-body` | 1rem / 16px | Body default, main action, small headings |
-| `--text-lg` | 1.5rem / 24px | Brand, desktop round title, metrics, dialog headings |
-| `--text-xl` | 2rem / 32px | Mobile display heading and mobile result number |
-| `--text-display` | 3.5rem / 56px | Desktop display heading and result number |
+| `--text-xs` | 13px / `.8125rem` | Source metadata, coordinates, concise instructions |
+| `--text-sm` | 14px / `.875rem` | Controls, compact descriptions |
+| `--text-base` | 16px / `1rem` | Body, disclosure headings, copy fields |
+| `--text-lg` | 20px / `1.25rem` | Secondary headings and game values |
+| `--text-xl` | 32px / `2rem` | Main title on compact/phone layouts, pause message |
+| `--text-display` | 40px / `2.5rem` | Roomy desktop title and result score |
 
-The h1 is weight 600, line-height 1.06, tracking −.055em; below 44rem it is 32px/1.12 with −.05em tracking. Round/dialog h2 uses 24px/1.3 with −.03em tracking; the mobile round name becomes 16px/1.4 with natural tracking. H3 uses 16px/1.4 at weight 600. Prose is 1.5–1.6 line-height. Long details are capped near 65 characters; headings balance and long hashes wrap instead of truncating. Metrics use tabular numerals to remain stable as counts change. The page uses natural sentence case.
+Headings use 1.1–1.25 line-height and balanced wrapping. Body uses 1.6; modal prose uses 1.65. The main title tracks at −.045em at 40px or −.035em at 32px; small text is naturally spaced. Timers, scores and changing values use tabular numbers. Critical identifiers wrap with `overflow-wrap: anywhere` in detail views instead of clipping. Textareas remain at 16px or larger on mobile. Root antialiasing is applied once.
 
 ## Layout
 
-Shared spacing tokens are **4, 8, 12, 16, 24, 32, 48 and 64px** (`--space-*`). A group uses smaller internal gaps than the space separating it from another group. One common `.container` aligns header, game and footer.
+Spacing reference tokens are **4, 8, 12, 16, 24 and 32px** (`--space-1` through `--space-8`); component declarations use that rhythm plus geometry-specific board gaps/insets. Structural edges align the title, mode control, stats, board and action row.
 
-- **Above 60rem:** container width is `min(1160px, 100% − 80px)`. The workspace has a board column capped at 520px, a second column of at least 300px, and a 64px gap. The heading is a compact single row with a plain product description alongside. The board frame has 24px padding; grid gaps are 10px.
-- **At or below 60rem:** the container uses 24px side margins; the workspace uses 32px gaps and flexible 1.25fr/1fr columns with a 280px minimum on the controls. Frame padding becomes 16px, grid gaps 8px.
-- **At or below 44rem:** one column with a 500px maximum and 16px side margins. Round controls and Play puzzle appear before the board, then source controls. The same order is in the DOM. The brand and help remain at opposite ends of a 76px header. The h1 is 32px. The essential rules remain beside the board and in Help. Workspace gaps and intro padding are 16px.
-- **At or below 22rem:** frame padding is 12px, tile gaps 6px and tile corners 8px; brand text is 16px. This keeps all five columns usable at 320px.
+- Roomy desktop: `.app` max 1200px, 40px inline padding; `.main-layout` has up to 650px game + 310px source column, 72px gap.
+- Desktop with height ≤1020px: a compact 490px game + 290px aside, 64px gap, 76px header and smaller title. This keeps the full game and action row visible at the checked desktop size.
+- Width ≤1080px: 28px page inset, compact brand/title and narrower columns.
+- Width ≤760px: one column, max 620px page; 20px inset, 82px header, game first, source details below. At 390×844 the complete board and main Start action are visible on the first screen. The remaining charge count is also shown on Grow.
+- Width ≤365px: 12px inset and tighter utility spacing; the six-column board still reflows without horizontal scroll.
+- The 6×6 board has square cells, 6px desktop / 5px phone gaps, and no drag surface. Metadata and source labels wrap. Statistics use auto-fit columns, and mode labels can wrap under text enlargement.
 
-The 5×5 board remains square. Coordinates are physical and the grid keeps `direction: ltr` even when the surrounding page is mirrored. Logical margins/padding handle surrounding layout direction. Text containers grow and wrap; full hashes and share links are never ellipsized. Dialogs scroll within `100dvh − 48px` and retain 16px viewport margins.
+Actual production browser widths checked: 320, 390, 620, 760, 900 and 1440, plus a 1920×1080 overlay. Horizontal overflow was absent. Root text enlargement to 200% at 390 also reflowed; this was not native browser zoom. English is the only implemented locale; RTL and a translated version were not tested or claimed.
 
-Rendered widths checked: **320, 390, 768, 960 and 1440px**, plus a separate taste probe at 320/390/1440. The main action is on the first screen at 390×844. Reflow also passed with the root font enlarged to 200% and with an RTL mirror. This is not a native browser-zoom or translated-language test.
+## Elevation & depth
 
-## Elevation & Depth
+Tonal layers establish depth: night page, indigo bed, conduit tiles and warmer powered backings. There are no card shadows or nested card stacks. Sparse separators organize the aside; control borders communicate interaction, selection outlines communicate state. A subtle nontext radial atmosphere sits behind the game.
 
-The interface is flat. Header/footer/metrics/source separators and neutral button borders communicate structure. There are no nested information cards or decorative page shadows. The dark board is a single tonal surface.
-
-`Modal` uses the native dialog top layer, an opaque ivory surface and a single `0 24px 80px #0003` shadow without a border. Its backdrop is `#162015a6` with 3px blur. The backdrop never carries text. No fixed toolbar covers gameplay.
+Native dialogs use an opaque surface with one border, a dark translucent backdrop and 5px backdrop blur. The page behind them is made inert by `showModal()`. Dialogs scroll within 90dvh. Focus/selection perimeters sit above tiles; the overlay's Show/Hide control remains accessible in a fixed corner on desktop and in normal flow on narrow screens.
 
 ## Shapes
 
-The board frame is 24px radius on desktop, 20px at the intermediate breakpoint and 18px on very narrow screens. Tiles use 12px corners, reducing to 10px and 8px. Controls use 10px corners. The help illustration has a 16px backing radius and 5px miniature cells. Dialogs use 24px corners. These values distinguish the overall panel, controls and nested switch shapes without extra decorations.
+Conduit/button radii are 9px desktop; board bed radius 20px with 16px normal inset. Phone tiles use 7px corners inside a 15px bed with 10px inset. Small fields use 8px; dialog corners are 20px desktop / 15px phone. Flower petals, ferns, stone facets and the hamster wheel are original SVG geometry; do not replace them with unrelated icon assets.
 
 ## Components
 
-### Buttons and links
+| Component / pattern | Source | Behavior and states |
+| --- | --- | --- |
+| `Board` | `src/components/Board.tsx` | Native button cells with one roving tab stop; arrows focus, Enter selects, R rotates selected conduit. Selected coordinate, powered leaf/ports, blocked stone, checked beacon and charged bloom are distinct. Disabled/covered boards remove cell tab stops. |
+| `tileArt`, `flowerArt`, `wheelArt` | `src/components/art.ts` | Shared original vector drawing used by board and PNG. `powered` / `boosted` are visual parameters; the engine determines them. |
+| `Modal` | `src/components/Modal.tsx` | Native `<dialog>`, title, close button, Escape/backdrop close, visible keyboard focus, trap over actual tabbable controls only, focus return. `wide` expands instructional content. |
+| `Tutorial` | `src/components/Tutorial.tsx` | Separate fixed Demo lesson using the same engine/board. Dashed target, four interactive steps, one primary action per step. |
+| `.primary` / `.icon-button` / `.text-button` | `src/styles/app.css` | Warm filled primary, neutral outlined utilities, consistent text disclosure; hover, visible focus, pressed and disabled states. Core controls are at least 44px high; some small utilities are 36px with spacing. |
+| `.mode-tabs` | `src/App.tsx`, CSS | Three native pressed-state buttons, underline and explicit mode text. Active play requests confirmation before a mode change. |
+| `.score-strip`, `.run-extras` | `src/App.tsx`, CSS | Stable tabular values and quiet labels; game values precede the board, streak/combo/local best follow controls. |
+| `.reservoir`, `.source-details` | `src/App.tsx`, CSS | Three visible slots plus textual count, exact charge mapping, real network/time and source-state disclosures. Unavailable and empty states offer retry and explicit Demo. |
+| `.overlay-app.controls-hidden` | `src/App.tsx`, CSS | Actual 16:9 game scene at a static query URL. Keeps garden, mode/round/freshness, source and reservoir; hides ordinary controls until requested. Same-profile storage following is display-only; a standalone game continues while controls are hidden. |
+| PNG / share pattern | `src/data/export.ts`, `src/App.tsx` | Actual current-state PNG download, copied overlay URL, labelled manual-copy textarea on denial, explicit errors and progress. |
 
-Patterns live in `src/styles/app.css:31`. `.button-primary` is a filled lime action; use one primary action for the current task. `.button-outline` is a neutral source/export action; `.button-quiet` is a utility. `.text-button` is underlined and at least 44px tall. `.icon-button` is 44×44 and requires an accessible action name. The brand also has a 44px minimum height.
+High-frequency transitions are **120ms**, naming background/color/opacity/scale only. Primary/icon press scales to **.96**. A one-time flower arrival lasts 400ms after restoration. All motion is opt-in through `prefers-reduced-motion: no-preference`; there is no endless animation or `transition: all`. Pausing does not trap focus behind the board cover. Reduced motion was exercised; animation-panel replay at 10% speed was not performed.
 
-Standard buttons are at least 48px tall; desktop primary gameplay is 56px, mobile is 48px, and board tools are at least 44px. Hover styles are gated behind `(hover:hover)`. Native disabled states prevent actions and dim utilities, while the ready/finished board retains its readable light pattern.
+## Do's and don'ts
 
-### Board
+- Start a new surface with the existing tokens, typography and flat spacing hierarchy. Put the actual task before source explanations.
+- Use the warm filled action for Start/Rotate/Next/confirm. Keep secondary actions neutral. Never turn a status badge into a misleading control.
+- Reuse `Board` and the pure engine for another presentation, as overlay/tutorial already do. Draw exported gardens with the same `tileArt` functions.
+- Keep explicit Historical / Live / Demo provenance, actual network and source timestamps. Preserve labels when API requests fail; offer Demo as an explicit choice.
+- Keep selection, power, blocked and grown states distinguishable beyond hue. Keep native button/dialog semantics and visible focus.
+- Keep required runtime assets local and URLs relative. Do not add a remote font, a dashboard-first hero, extra type families or an unrelated visual theme.
 
-`src/components/Board.tsx` receives the current `Round` and callbacks for press, restart, undo and export. It owns only focus/hover presentation. A native button in each semantic gridcell exposes its coordinate, on/off state, and hint state. Tiles are enabled in the ready state: the first press starts the round and counts as move 1. The board is disabled only after a win or loss.
+For an additional informational panel, use `Modal`, an h2 title, compact 14px prose, existing link styling and one clear close/return path. For a new game view, feed a `Run` into `Board` and derive connectivity from the engine; avoid a separate cosmetic game simulation.
 
-Arrow keys and Home/End move a roving tab stop; Space/Enter activate. The current focus has a **3px solid ivory ring, 3px offset**. A hint has a dashed ring and visible “Hint” label. Hover/focus outlines preview the pressed tile's cross. Start and replay focus the active grid tile. On/off markers differ by filled versus outlined centers.
-
-### Modal
-
-`src/components/Modal.tsx` accepts `title`, `onClose`, `children` and optional `wide`. Default maximum width is 480px; wide is 600px. It uses `showModal()`, labels itself from the visible heading, autofocuses Close, wraps Tab/Shift+Tab, closes on Escape/backdrop, and restores the opener's focus. Native dialog makes the background inert. Use it for help, source, archive, result and explicit discard confirmations.
-
-### Round controls and source panel
-
-These are composition patterns in `src/App.tsx`, not an exported component library. The round panel presents origin, identity, moves/par/potential, and one main action in the same slot: **Play puzzle** (`.button-primary`) when ready, **Show a hint −100 pts** (`.button-outline`, deliberately not primary because it costs points) during play, and **Play again** (`.button-primary`) after a result. The header holds only the brand and How to play; the footer holds See puzzle source and the version. The result dialog's status line starts empty and only reports a PNG export. The guidance is a polite atomic status region for hints and remaining moves. Feed status is separately announced. This distinguishes a locked round from the changing feed.
-
-Source choices show loading/live/stale/unavailable/paused with text. Load latest block is disabled unless there is a fresh different input. Demo and archive remain usable. Local storage errors have a visible warning; no fabricated data fills an API outage.
-
-### Details, imports and exports
-
-Source details use a two-column definition list and wrapping monospace values. Export actions wrap as needed. Clipboard denial reveals a full, explicitly labeled selectable textarea (`#puzzle-link`). Archive import is a labeled native file input with an error region; the list clearly says browser-local and unverified. Result content shows outcome, score provenance and replay/export actions, with no implied public leaderboard.
-
-### Icons and motion
-
-`src/components/Icon.tsx` contains one local SVG set with 1.7px current-color strokes, 20px by default and 16/18px in supporting labels. Icons are decorative when a text label supplies the accessible name. `Mark` is the local four-switch brand symbol.
-
-Interaction transitions are **120ms**, explicit `background-color` and `scale`, with `cubic-bezier(.2,0,0,1)`. Press scale is **.96**. They exist only under `prefers-reduced-motion: no-preference`; no endless animation or page entrance exists. Motion is accompanied by persistent board state, labels or counters. Forced colors retains switch borders and a distinct lit state.
-
-## Do's and Don'ts
-
-- Start with `.container`, the six type tokens and existing buttons. Keep the actual game/action ahead of explanation on mobile.
-- Reuse the semantic palette. If changing off-tile fill or hint ink, remeasure both the 3:1 tile/frame boundary and 4.5:1 hint text pair, then update PNG/share rendering too.
-- Use `Modal` for an overlay; preserve its focus behavior. Use ordinary wrapping flow for details and utility actions.
-- Keep all origin labels truthful. A cached, imported or demo input must not acquire the live badge merely because a separate feed is connected.
-- Keep full identifiers available and copyable. Add no fixed-height text box, cropped hash or ellipsis to force a fit.
-- To add another small view, compose existing buttons, heading steps and flat source rows; keep hash routing/static export compatibility and recheck 390px. Do not add another font, decorative card stack or unneeded wallet integration.
-
-Design workflow attribution: Better Interface by Jakub Krehel (MIT); documentation method adapted from Impeccable by Paul Bakaus (Apache-2.0). Exact pinned source links are in `README.md`; notices and licenses are retained in `LICENSES/Design-guidance-LICENSE.txt`.
+Six-domain coverage, fixes, actual checks and unperformed checks are recorded in [evidence/validation.md](evidence/validation.md). The referenced guide's MIT and Apache-2.0 notices remain in `LICENSES/Design-guidance-LICENSE.txt`.

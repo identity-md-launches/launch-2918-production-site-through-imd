@@ -1,47 +1,50 @@
-import { describe, expect, test } from 'vitest';
-import { addArchive, ARCHIVE_KEY, decodeInput, encodeInput, readArchive, STARTER_ARCHIVE, validateInput } from '../src/data/archive';
-import { createPuzzle, createRound } from '../src/core/engine';
-
-describe('archive reproducibility without a network', () => {
-  test('JSON round-trip replays the exact board, par, limit and seed', () => {
-    const original = createRound(STARTER_ARCHIVE, 'live');
-    const exported = JSON.stringify({ version: 1, input: original.puzzle.input, score: 999999, initialBoard: 0 });
-    const loaded = createRound(validateInput(JSON.parse(exported).input), 'archive');
-    expect(loaded.puzzle).toMatchObject({ seed: original.puzzle.seed, initial: original.puzzle.initial, par: original.puzzle.par, limit: original.puzzle.limit });
-    expect(loaded.origin).toBe('archive'); expect(loaded.history).toEqual([]); expect(loaded.phase).toBe('ready');
+import { describe, expect, it } from 'vitest';
+import { archiveSource, energyBudget, parseArchive, parseEconomy, parseSettlement, transactionURL } from '../src/data/archive';
+import { createPuzzle, createRun } from '../src/core/engine';
+import { loadSaved, restoreRun, saveState } from '../src/data/storage';
+import { emptyTracker, sample } from '../src/data/telemetry';
+import { archiveJSON, economyJSON, NOW, settlementJSON, statusJSON } from './fixtures';
+import { parseStatus } from '../src/data/archive';
+describe('safe archive reproducibility', () => {
+  it('pins a real safe positive-work transaction and identical puzzle/budget on two devices', () => {
+    const archive = parseArchive(archiveJSON), economy = parseEconomy(economyJSON);
+    const a = archiveSource(archive.items[0], archive, economy), b = archiveSource(parseSettlement(JSON.parse(JSON.stringify(settlementJSON))), parseArchive(JSON.parse(JSON.stringify(archiveJSON))), parseEconomy(JSON.parse(JSON.stringify(economyJSON))));
+    expect(a).toEqual(b); expect(a.budget).toBe(2);
+    for (let stage = 0; stage < 3; stage++) expect(createPuzzle(a.key, stage)).toEqual(createPuzzle(b.key, stage));
+    expect(transactionURL(a)).toBe('https://sepolia.etherscan.io/tx/' + settlementJSON.transactionHash);
   });
-  test('share links preserve the full hash and reproduce both block and demo puzzles', () => {
-    for (const input of [STARTER_ARCHIVE, { version: 1, kind: 'demo', index: 29 } as const]) {
-      const decoded = decodeInput(encodeInput(input))!;
-      expect(createPuzzle(decoded).initial).toBe(createPuzzle(input).initial);
-      expect(createPuzzle(decoded).seed).toBe(createPuzzle(input).seed);
-    }
+  it('never assumes contiguous rounds; filters idle, pending, invalid and duplicate entries', () => {
+    const archive = parseArchive({ ...archiveJSON, recentSettlements: [{ ...settlementJSON, settledThroughRound: '1201', transactionHash: '0x' + 'a'.repeat(64) }, { ...settlementJSON, workAdded: '0' }, { ...settlementJSON, confirmationStatus: 'pending' }, { ...settlementJSON, transactionHash: 'bad' }, settlementJSON, settlementJSON] });
+    expect(archive.items.map(s => s.settledThroughRound)).toEqual(['1214', '1201']);
   });
-  test('malformed, unsupported and oversized share links are rejected', () => {
-    expect(decodeInput('#game')).toBeNull();
-    for (const hash of ['#p=2.d.1', '#p=1.d.-1', '#p=1.d.0', '#p=1.b.12.abc.123', '#p=' + 'x'.repeat(300)]) expect(() => decodeInput(hash)).toThrow();
+  it('rejects a mismatched installation or chain; never invents explorer links', () => {
+    const archive = parseArchive(archiveJSON), e = parseEconomy(economyJSON);
+    expect(() => archiveSource(archive.items[0], { ...archive, installationId: 'different' }, e)).toThrow();
+    const s = archiveSource(archive.items[0], archive, e); expect(transactionURL({ ...s, network: { target: 'unknown', chainId: '988' } })).toBeNull();
   });
-  test('rejects incorrect versions, unsafe numbers, empty hashes and malformed inputs', () => {
-    for (const value of [null, {}, { version: 2, kind: 'demo', index: 1 }, { version: 1, kind: 'demo', index: 0 }, { version: 1, kind: 'demo', index: 1.5 }, { version: 1, kind: 'demo', index: 1_000_001 },
-      { version: 1, kind: 'block', block: { number: 1, hash: '0x' + '0'.repeat(64), timestamp: 1793707247 } },
-      { version: 1, kind: 'block', block: { number: Number.MAX_SAFE_INTEGER + 1, hash: '0x' + 'a'.repeat(64), timestamp: 1793707247 } }]) expect(() => validateInput(value)).toThrow();
+  it('bounds the actual work-based energy budget without unsafe number conversion', () => {
+    expect(['1', '249', '250', '499', '500', '9999999999999999999999999999999999'].map(energyBudget)).toEqual([1, 1, 2, 2, 3, 3]);
   });
-  test('local archive deduplicates and retains the most recent 30 inputs', () => {
-    let items = addArchive([], STARTER_ARCHIVE, 1);
-    items = addArchive(items, STARTER_ARCHIVE, 2); expect(items.length).toBe(1); expect(items[0].savedAt).toBe(2);
-    for (let i = 1; i <= 40; i++) items = addArchive(items, { version: 1, kind: 'demo', index: i }, i + 2);
-    expect(items.length).toBe(30); expect(items[0].input).toEqual({ version: 1, kind: 'demo', index: 40 });
+  it('rejects incomplete and non-safe source fields', () => {
+    for (const key of Object.keys(settlementJSON)) { const v = { ...settlementJSON } as Record<string, unknown>; delete v[key]; expect(() => parseSettlement(v)).toThrow(); }
+    expect(() => parseArchive({ ...archiveJSON, schemaVersion: 2 })).toThrow();
   });
-  test('missing storage is empty; corrupted or oversized storage is recoverable', () => {
-    expect(readArchive({ getItem: () => null })).toEqual({ items: [], warning: null });
-    for (const value of ['not json', '{}', '[null]', 'x'.repeat(100_001)]) {
-      const result = readArchive({ getItem: () => value }); expect(result.items).toEqual([]); expect(result.warning).toBeTruthy();
-    }
-    expect(readArchive({ getItem: () => { throw new Error('Storage blocked'); } }).warning).toBeTruthy();
+});
+describe('local progress with graceful storage failure', () => {
+  const source = () => { const a = parseArchive(archiveJSON); return archiveSource(a.items[0], a, parseEconomy(economyJSON)); };
+  it('restores the exact garden and pauses active play on reload', () => {
+    const r = createRun(source()); r.phase = 'playing'; r.moves = 1; r.remainingMs = 120000;
+    expect(restoreRun(r)).toEqual({ ...r, phase: 'paused' });
   });
-  test('stored headers rebuild identically on a new session', () => {
-    const items = addArchive([], STARTER_ARCHIVE, 100);
-    const read = readArchive({ getItem: key => key === ARCHIVE_KEY ? JSON.stringify(items) : null });
-    expect(read.warning).toBeNull(); expect(createPuzzle(read.items[0].input).initial).toBe(createPuzzle(STARTER_ARCHIVE).initial);
+  it('discards corrupt progress and reports inaccessible storage', () => {
+    expect(loadSaved({ getItem() { throw new Error('denied'); } }).warning).toContain('unavailable');
+    expect(saveState(null, emptyTracker(), {}, { setItem() { throw new Error('quota'); } })).toBe(false);
+    expect(() => restoreRun({ source: source(), version: 1, stage: 0, phase: 'playing', tiles: [] })).toThrow();
+  });
+  it('preserves live high-water marks through reload and requires rebaselining', () => {
+    const st = parseStatus(statusJSON), ec = parseEconomy(economyJSON), tracker = sample(emptyTracker(), st, ec, NOW);
+    let raw = ''; saveState(null, tracker, { demo: 2000 }, { setItem(_, v) { raw = v; } });
+    const restored = loadSaved({ getItem() { return raw; } });
+    expect(restored.tracker.seen).toEqual(tracker.seen); expect(restored.tracker.needsBaseline).toBe(true); expect(restored.bests.demo).toBe(2000);
   });
 });

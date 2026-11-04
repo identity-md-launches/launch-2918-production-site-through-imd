@@ -1,0 +1,135 @@
+{
+  "generatedAt": "2026-11-04T02:15:52.024Z",
+  "target": "production dist/ at /preview/ subpath",
+  "checks": [
+    {
+      "name": "chromium: interactive tutorial, modal keyboard trap and focus return",
+      "passed": true,
+      "evidence": "Four tutorial steps completed by touch; WCAG-tagged axe scan 0 violations; dialog traps Tab and restores focus."
+    },
+    {
+      "name": "chromium: keyboard selection/rotation, pause, help, restart and saved progress",
+      "passed": true,
+      "evidence": "Enter selects without spending; arrows move focus; R rotates; pause freezes virtual time; reload restores paused board; restart cancel/confirm works."
+    },
+    {
+      "name": "chromium: full three-garden win, growth spending, best, PNG, overlay URL fallback",
+      "passed": true,
+      "evidence": "All 3 boards won via UI; charge spent once for +150; Demo best persisted; real 1200\u00d7675 PNG downloaded; denied clipboard exposes complete manual-copy URL."
+    },
+    {
+      "name": "chromium: complete mobile touch win, genuine move-loss, restart and first screen",
+      "passed": true,
+      "evidence": "390\u00d7844 main action fully visible; full 3-board win by taps without dragging; actual loss at 11 moves; Play again resets game."
+    },
+    {
+      "name": "chromium: idle Live Garden, repeats, energy cap, epoch/reconnect and next-board seed",
+      "passed": true,
+      "evidence": "Idle live starts at zero energy; repeated samples award nothing; new paired movement caps reservoir at 3; epoch and outage rebaseline; board survives all feed changes."
+    },
+    {
+      "name": "chromium: historical round pinning, selection, actual network and cross-device reproduction",
+      "passed": true,
+      "evidence": "Safe round 1214 is default; chain label and explorer are Sepolia; separate contexts generate identical boards; non-contiguous round 1201 is selectable; a pinned tx URL takes precedence over a different saved tx in the same round."
+    },
+    {
+      "name": "chromium: unavailable API, explicit Demo recovery and storage denial",
+      "passed": true,
+      "evidence": "No random fallback for unavailable historical source; explicit Play Demo starts fixture; denied localStorage shows warning and game still works."
+    },
+    {
+      "name": "chromium: real 16:9 overlay, controls toggle and source-dependent board",
+      "passed": true,
+      "evidence": "1920\u00d71080 overlay is exactly 16:9, source/mode/freshness retained; same actual engine; Show/Hide controls and real rotation work; a standalone hidden-controls game continues its actual clock."
+    },
+    {
+      "name": "chromium: responsive reflow, reduced motion, accessibility, contrast and focus",
+      "passed": true,
+      "evidence": {
+        "widths": [
+          320,
+          390,
+          620,
+          760,
+          900,
+          1440
+        ],
+        "overflow": "none",
+        "rootTextEnlargement": "200%, no horizontal overflow",
+        "axeViolations": 0,
+        "reducedMotionRunningAnimations": 0,
+        "focus": {
+          "width": "3px",
+          "style": "solid"
+        },
+        "measuredSolidPairs": [
+          {
+            "label": "body",
+            "foreground": "#f2eee4",
+            "background": "#0b1021",
+            "ratio": 16.325
+          },
+          {
+            "label": "muted",
+            "foreground": "#a9b7ca",
+            "background": "#141c31",
+            "ratio": 8.316
+          },
+          {
+            "label": "primary",
+            "foreground": "#151b28",
+            "background": "#edc77c",
+            "ratio": 10.712
+          },
+          {
+            "label": "focus",
+            "foreground": "#f7e8bd",
+            "background": "#141c31",
+            "ratio": 13.895
+          }
+        ]
+      }
+    },
+    {
+      "name": "chromium: timer expiry, sound toggle and separate local mode bests",
+      "passed": true,
+      "evidence": "Virtual clock reaches genuine 0:00 loss and restart; sound starts off, enables only on click and toggles off; mode bests read distinct local keys."
+    },
+    {
+      "name": "chromium: same-browser overlay follows real live progress without duplicate charge accounting",
+      "passed": true,
+      "evidence": "Separate pages in one browser share actual live board, bloom and 3\u21922 charge spend; display-only overlay neither awards energy nor overwrites controller storage."
+    },
+    {
+      "name": "chromium: actual public APIs and production screenshots",
+      "passed": true,
+      "evidence": {
+        "modes": "Historical round 1214\nChange round",
+        "source": "A moment from the wheel\nSource\nHistorical \u00b7 API-safe settlement\nNetwork\nSepolia testnet \u00b7 11155111\nSource time\n4 Nov, 00:15 UTC\nWheel now\nIdle \u00b7 baseline power on\nView round transaction\nHow it works",
+        "fonts": [
+          {
+            "family": "DM Sans",
+            "status": "loaded"
+          },
+          {
+            "family": "Space Grotesk",
+            "status": "loaded"
+          }
+        ],
+        "scriptErrors": [],
+        "missingLocalResources": [],
+        "mainAction390": {
+          "x": 20,
+          "y": 756.375,
+          "width": 154,
+          "height": 44
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "WebKit could not launch because required system libraries were missing. No WebKit assertions ran.",
+    "Physical phone, screen reader, native browser zoom, real OBS capture, speaker audibility and real-time hamster movement/staleness were not checked."
+  ],
+  "fixtureDisclosure": "Feed edge cases, alternate safe transactions, reproducibility scenarios and virtual-clock checks use explicit mocked APIs. Only the actual-public-API group reads the real services. Demo is always labelled practice."
+}

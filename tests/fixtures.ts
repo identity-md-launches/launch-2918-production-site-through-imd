@@ -1,0 +1,6 @@
+// Explicit test-only fixtures. Never imported by production code.
+export const NOW = Date.parse('2026-11-04T01:20:40Z');
+export const statusJSON = { schemaVersion: 1, installationId: 'test-installation', generatedAt: new Date(NOW).toISOString(), measurement: { freshness: 'online', observedAt: new Date(NOW).toISOString(), staleAfterSeconds: 120, counterEpoch: 'test-epoch-a', cumulativeWorkUnits: '90000', coreStatus: 'IDLE', rpmMilli: 0, speedMmPerSecond: 0, distanceMm: 4500000 } };
+export const economyJSON = { schemaVersion: 2, status: 'available', installationId: 'test-installation', generatedAt: new Date(NOW).toISOString(), chain: { target: 'sepolia', chainId: '11155111' }, lifecycle: { currentRound: '1221' }, release: { id: 'test-release' } };
+export const settlementJSON = { transactionHash: '0x0120e9817f1bf17a5ad0ba51f7815636ed61198236cf870582dc0a9b98c03c3b', settledThroughRound: '1214', workAdded: '498', cumulativeWork: '89958', confirmationStatus: 'safe', blockTimestamp: '2026-11-04T00:15:36.000Z' };
+export const archiveJSON = { schemaVersion: 3, status: 'available', installationId: 'test-installation', generatedAt: new Date(NOW).toISOString(), chain: economyJSON.chain, recentSettlements: [settlementJSON] };

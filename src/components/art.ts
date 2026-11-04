@@ -1,0 +1,13 @@
+import type { Tile } from '../core/types';
+export const wheelArt = `<g fill="none" stroke="#edc77c" stroke-width="2"><path d="M24 88h52M38 88l12-36 12 36"/><circle cx="50" cy="43" r="34"/><circle cx="50" cy="43" r="29" opacity=".35"/><path d="M50 9v68M16 43h68M26 19l48 48M26 67l48-48" opacity=".4"/></g><g><ellipse cx="48" cy="57" rx="17" ry="12" fill="#c09b77"/><circle cx="61" cy="51" r="10" fill="#ead0a3"/><circle cx="57" cy="41" r="5" fill="#ead0a3"/><circle cx="57" cy="41" r="2.5" fill="#b9827c"/><circle cx="65" cy="49" r="1.8" fill="#101623"/><path d="M71 52h3M42 68l-4 4M58 65l6 5" stroke="#ead0a3" stroke-width="3" stroke-linecap="round"/></g>`;
+export const flowerArt = (bloom: boolean, boost: boolean) => `<g fill="${boost ? '#f5ce7f' : bloom ? '#91dfd3' : '#788b9f'}" stroke="#111a2d" stroke-width="1.8">${[0, 72, 144, 216, 288].map(n => `<ellipse cx="50" cy="34" rx="9" ry="17" transform="rotate(${n} 50 50)"/>`).join('')}<circle cx="50" cy="50" r="8" fill="${boost ? '#fff1b8' : bloom ? '#e8d39a' : '#111a2d'}"/></g>${boost ? '<path d="m78 17 2 6 6 2-6 2-2 6-2-6-6-2 6-2Z" fill="#fff1b8"/>' : ''}`;
+export function tileArt(tile: Tile, powered: boolean, boosted: boolean): string {
+  if (tile.kind === 'rock') return '<path d="m23 67 7-30 24-12 23 18 3 27-27 7Z" fill="#252e48" stroke="#59627c" stroke-width="2"/><path d="m30 37 24 10 23-4M54 47l-1 30" fill="none" stroke="#59627c" stroke-width="2"/><path d="m30 66 9 3m29-13 3 7" stroke="#91aaa3" stroke-width="2"/>';
+  if (tile.kind === 'fern') return '<g fill="none" stroke="#5d8e8e" stroke-width="2" stroke-linecap="round"><path d="M50 82Q47 49 57 21M51 69Q27 66 28 49q18 1 23 20Zm0-16Q34 49 37 35q13 4 14 18Zm1-9q20-1 21-16-15 2-21 16ZM50 67q22 0 26-17-18 1-26 17Z"/></g>';
+  const paths = [[1, 'M50 50V0'], [2, 'M50 50H100'], [4, 'M50 50V100'], [8, 'M50 50H0']] as const;
+  const lines = paths.filter(([bit]) => tile.mask & bit).map(([, path]) => `<path d="${path}"/>`).join('');
+  const conduit = `<g fill="none" stroke-linecap="round" stroke-linejoin="round"><g stroke="${powered ? '#b38a48' : '#46526d'}" stroke-width="13">${lines}</g><g stroke="${powered ? '#f0ce86' : '#8592ac'}" stroke-width="5">${lines}</g></g>`;
+  if (tile.kind === 'source') return conduit + `<circle cx="50" cy="50" r="43" fill="#182139"/><g transform="translate(9 11) scale(.82)">${wheelArt}</g>`;
+  if (tile.kind === 'beacon') return conduit + `<circle cx="50" cy="50" r="34" fill="#182139"/>` + flowerArt(powered, boosted);
+  return conduit + `<circle cx="50" cy="50" r="5" fill="${powered ? '#fff0b7' : '#111a2d'}"/>${powered ? '<path d="M64 66q15-19 18-5-2 15-18 5Z" fill="#7bc8bd" opacity=".8"/>' : ''}`;
+}

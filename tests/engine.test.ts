@@ -1,163 +1,111 @@
-import { describe, expect, test } from 'vitest';
-import { applyPresses, BOARD_MASK, canonicalKey, createPuzzle, createRound, FALLBACK_PRESSES, gameReducer, hashSeed, MASKS, popcount, score, solve, xorshift32 } from '../src/core/engine';
-import { STARTER_ARCHIVE } from '../src/data/archive';
-import type { PuzzleInput } from '../src/core/types';
+import { describe, expect, it } from 'vitest';
+import { connections, createPuzzle, createRun, gameReducer, hashSeed, rotateMask, routed, solutionSteps, turnsTo } from '../src/core/engine';
+import { DEMO_SOURCE } from '../src/data/archive';
 
-const demo = (index: number): PuzzleInput => ({ version: 1, kind: 'demo', index });
-
-// Independent GF(2) Gaussian elimination, used only as an oracle. It does not
-// chase rows or call the production solve/applyPresses functions.
-function referenceMinimum(board: number): number | null {
-  const rows: number[] = [];
-  for (let cell = 0; cell < 25; cell++) {
-    let row = ((board >>> cell) & 1) << 25;
-    for (let press = 0; press < 25; press++) {
-      const dr = Math.abs(Math.floor(cell / 5) - Math.floor(press / 5));
-      const dc = Math.abs(cell % 5 - press % 5);
-      if (dr + dc <= 1) row |= 1 << press;
-    }
-    rows.push(row);
-  }
-  const pivots: number[] = [];
-  let rank = 0;
-  for (let col = 0; col < 25; col++) {
-    const offset = rows.slice(rank).findIndex(r => !!(r & (1 << col)));
-    if (offset < 0) continue;
-    const pivot = rank + offset;
-    [rows[rank], rows[pivot]] = [rows[pivot], rows[rank]];
-    for (let row = 0; row < 25; row++) if (row !== rank && rows[row] & (1 << col)) rows[row] ^= rows[rank];
-    pivots.push(col); rank++;
-  }
-  if (rows.slice(rank).some(row => row & (1 << 25))) return null;
-  const free = Array.from({ length: 25 }, (_, i) => i).filter(i => !pivots.includes(i));
-  let best = 26;
-  for (let choice = 0; choice < (1 << free.length); choice++) {
-    let bits = free.reduce((a, col, index) => a | (((choice >>> index) & 1) << col), 0);
-    for (let row = 0; row < rank; row++) {
-      let parity = (rows[row] >>> 25) & 1;
-      for (const col of free) parity ^= ((rows[row] >>> col) & 1) & ((bits >>> col) & 1);
-      bits |= parity << pivots[row];
-    }
-    best = Math.min(best, bits.toString(2).replaceAll('0', '').length);
-  }
-  return best;
+function independentReach(masks: number[], source: number): Set<number> {
+  const reached = new Set([source]); let changed = true;
+  while (changed) { changed = false; for (const i of [...reached]) for (const [delta, a, b] of [[-6, 1, 4], [1, 2, 8], [6, 4, 1], [-1, 8, 2]]) {
+    const j = i + delta; if (j < 0 || j >= 36 || (Math.abs(delta) === 1 && Math.floor(j / 6) !== Math.floor(i / 6))) continue;
+    if ((masks[i] & a) && (masks[j] & b) && !reached.has(j)) { reached.add(j); changed = true; }
+  } } return reached;
 }
-
-describe('board rules and minimum solver', () => {
-  test('corners and edges do not wrap; center changes exactly five cells', () => {
-    expect(MASKS[0]).toBe((1 << 0) | (1 << 1) | (1 << 5));
-    expect(MASKS[4]).toBe((1 << 4) | (1 << 3) | (1 << 9));
-    expect(MASKS[12]).toBe([7, 11, 12, 13, 17].reduce((a, i) => a | 1 << i, 0));
-    expect(popcount(MASKS[2])).toBe(4);
-    expect(popcount(MASKS[24])).toBe(3);
+describe('connected-solution generator', () => {
+  it('retains stable unsigned hashing and rotation primitives', () => {
+    expect(hashSeed('hello')).toBe(0x4f9f2cab); expect(rotateMask(9)).toBe(3); expect(turnsTo(10, 5)).toBe(1);
+    for (let n = 0; n < 16; n++) expect(rotateMask(rotateMask(rotateMask(rotateMask(n))))).toBe(n);
   });
-  test('presses commute and pressing twice cancels', () => {
-    const initial = createPuzzle(demo(1)).initial;
-    expect(initial ^ MASKS[1] ^ MASKS[2]).toBe(initial ^ MASKS[2] ^ MASKS[1]);
-    expect(initial ^ MASKS[12] ^ MASKS[12]).toBe(initial);
-  });
-  test('known empty, one-move and unsolvable boards', () => {
-    expect(solve(0)).toBe(0);
-    expect(solve(MASKS[12])).toBe(1 << 12);
-    expect(referenceMinimum(1)).toBeNull();
-    expect(solve(1)).toBeNull();
-  });
-  test('500 deterministic samples are solvable, nonempty and within budget', () => {
-    for (let index = 1; index <= 500; index++) {
-      const puzzle = createPuzzle(demo(index));
-      expect(puzzle.initial).toBeGreaterThan(0);
-      expect(puzzle.initial & ~BOARD_MASK).toBe(0);
-      expect(puzzle.par).toBeGreaterThanOrEqual(5);
-      expect(puzzle.par).toBeLessThanOrEqual(12);
-      expect(applyPresses(puzzle.initial, solve(puzzle.initial)!)).toBe(0);
-      expect(puzzle.limit).toBe(puzzle.par + 8);
+  it('makes 3000 deterministic solvable 6×6 boards within budget, with four leaves and all tile types', () => {
+    for (let seed = 0; seed < 1000; seed++) for (let stage = 0; stage < 3; stage++) {
+      const p = createPuzzle(`corpus:${seed}`, stage), q = createPuzzle(`corpus:${seed}`, stage);
+      expect(p).toEqual(q); expect(p.tiles).toHaveLength(36); expect(p.beacons).toHaveLength(4);
+      const fixed = p.tiles.map(t => ({ ...t, mask: t.solution }));
+      const reached = independentReach(fixed.map(t => t.mask), p.source);
+      expect(p.beacons.every(i => reached.has(i))).toBe(true);
+      expect([...connections(fixed, p.source)].sort()).toEqual([...reached].sort());
+      expect(p.tiles.filter(t => t.kind === 'conduit' && t.mask !== t.solution)).toHaveLength(4 + stage * 3);
+      expect(p.tiles.some(t => t.kind === 'rock')).toBe(true);
+      const conduits = p.tiles.filter(t => t.kind === 'conduit');
+      expect(conduits.some(t => t.solution === 5 || t.solution === 10)).toBe(true);
+      expect(conduits.some(t => [7, 11, 13, 14].includes(t.solution))).toBe(true);
+      expect(conduits.some(t => [3, 6, 9, 12].includes(t.solution))).toBe(true);
+      const cost = conduits.reduce((n, t) => n + turnsTo(t.mask, t.solution), 0);
+      expect(cost).toBe(p.par); expect(cost).toBeLessThanOrEqual(p.limit);
+      expect(p.beacons.every(i => independentReach(p.tiles.map(t => t.mask), p.source).has(i))).toBe(false);
     }
   });
-  test('par matches an independent algebraic solver on 80 boards', () => {
-    for (let i = 1; i <= 80; i++) {
-      const puzzle = createPuzzle(demo(i));
-      expect(puzzle.par).toBe(referenceMinimum(puzzle.initial));
-    }
-  });
-  test('bounded fallback is solvable and stays inside the advertised difficulty', () => {
-    const board = applyPresses(0, FALLBACK_PRESSES);
-    expect(board).toBeGreaterThan(0);
-    expect(referenceMinimum(board)).toBe(5);
-    expect(popcount(solve(board)!)).toBe(5);
-    expect(applyPresses(board, solve(board)!)).toBe(0);
-  });
-  test('a shortest solution wins every one of 100 generated rounds', () => {
-    for (let i = 1; i <= 100; i++) {
-      let round = gameReducer(createRound(demo(i), 'demo'), { type: 'start' });
-      const solution = solve(round.board)!;
-      for (let cell = 0; cell < 25; cell++) if (solution & 1 << cell) round = gameReducer(round, { type: 'press', cell });
-      expect(round.phase).toBe('won'); expect(round.history.length).toBe(round.puzzle.par); expect(score(round)).toBe(1000);
+  it('completes 100 full three-board games using only legal clockwise rotations', () => {
+    for (let seed = 0; seed < 100; seed++) {
+      let r = gameReducer(createRun({ ...DEMO_SOURCE, key: `run:${seed}` }), { type: 'start' });
+      for (let stage = 0; stage < 3; stage++) {
+        for (const index of solutionSteps(r)) {
+          if (r.phase === 'bloom') break;
+          r = gameReducer(r, { type: 'select', index }); r = gameReducer(r, { type: 'rotate' });
+        }
+        expect(r.phase).toBe('bloom'); expect(routed(r)).toHaveLength(4); expect(r.moves).toBeLessThanOrEqual(r.puzzle.limit);
+        r = gameReducer(r, { type: 'next' });
+      }
+      expect(r.phase).toBe('won'); expect(r.completed).toBe(3); expect(r.score).toBeGreaterThan(2400);
     }
   });
 });
-
-describe('versioned seeds and reproducibility', () => {
-  test('FNV-1a and xorshift have independent known vectors', () => {
-    expect(hashSeed('hello')).toBe(0x4f9f2cab);
-    expect(xorshift32(1)).toBe(270369);
+describe('real gameplay states and budgets', () => {
+  it('selects without rotating; blocks fixed cells and paused input', () => {
+    const original = createRun(DEMO_SOURCE); let r = gameReducer(original, { type: 'start' });
+    const fixed = r.puzzle.source; r = gameReducer(r, { type: 'select', index: fixed });
+    expect(r.moves).toBe(0); expect(gameReducer(r, { type: 'rotate' })).toEqual(r);
+    r = gameReducer(r, { type: 'pause' }); expect(gameReducer(r, { type: 'tick', elapsed: 180000 })).toEqual(r);
+    expect(gameReducer(r, { type: 'rotate' })).toEqual(r); expect(gameReducer(r, { type: 'resume' }).phase).toBe('playing');
   });
-  test('v1 golden vectors pin archive behavior across future refactors', () => {
-    expect(createPuzzle(demo(1))).toMatchObject({ seed: 515378726, initial: 29810256, par: 10, limit: 18 });
-    expect(createPuzzle(STARTER_ARCHIVE)).toMatchObject({ seed: 3962975052, initial: 22582324, par: 8, limit: 16 });
-    expect(solve(22582324)).toBe(1771032);
+  it('loses at the move cap and restarts exact initial source, clock and budget', () => {
+    let r = gameReducer(createRun(DEMO_SOURCE), { type: 'start' });
+    const cell = r.tiles.findIndex(t => t.kind === 'conduit'); r = gameReducer(r, { type: 'select', index: cell });
+    for (let i = 0; i < r.puzzle.limit; i++) r = gameReducer(r, { type: 'rotate' });
+    expect(r.phase).toBe('lost'); expect(r.lossReason).toContain('last rotation'); expect(gameReducer(r, { type: 'restart' })).toEqual(createRun(DEMO_SOURCE));
   });
-  test('repeat samples give byte-identical puzzles; distinct demos vary', () => {
-    expect(createPuzzle(STARTER_ARCHIVE)).toEqual(createPuzzle(JSON.parse(JSON.stringify(STARTER_ARCHIVE))));
-    const boards = new Set(Array.from({ length: 100 }, (_, i) => createPuzzle(demo(i + 1)).initial));
-    expect(boards.size).toBeGreaterThan(95);
+  it('loses on the shared three-minute clock; cannot rotate after loss', () => {
+    let r = gameReducer(createRun(DEMO_SOURCE), { type: 'start' }); r = gameReducer(r, { type: 'tick', elapsed: 180001 });
+    expect(r.phase).toBe('lost'); expect(r.remainingMs).toBe(0); expect(gameReducer(r, { type: 'rotate' })).toEqual(r);
   });
-  test('timestamp and parent hash are metadata; hash and height seed the board', () => {
-    if (STARTER_ARCHIVE.kind !== 'block') throw new Error('Expected recorded header.');
-    const changed: PuzzleInput = { ...STARTER_ARCHIVE, block: { ...STARTER_ARCHIVE.block, timestamp: 1793700000, parentHash: undefined } };
-    expect(canonicalKey(changed)).toBe(canonicalKey(STARTER_ARCHIVE));
-    expect(createPuzzle(changed).initial).toBe(createPuzzle(STARTER_ARCHIVE).initial);
-    expect(canonicalKey({ ...changed, block: { ...changed.block, number: changed.block.number + 1 } })).not.toBe(canonicalKey(changed));
+  it('spends one charge only on a routed beacon, never twice on the same flower', () => {
+    let r = gameReducer(createRun(DEMO_SOURCE), { type: 'start' }); expect(gameReducer(r, { type: 'boost' })).toEqual(r);
+    for (const index of solutionSteps(r)) { if (r.phase === 'bloom') break; r = gameReducer(gameReducer(r, { type: 'select', index }), { type: 'rotate' }); }
+    r = gameReducer(r, { type: 'select', index: r.puzzle.beacons[0] }); const before = r;
+    r = gameReducer(r, { type: 'boost' }); expect(r.charges).toBe(before.charges - 1); expect(r.score).toBe(before.score + 150);
+    expect(gameReducer(r, { type: 'boost' })).toEqual(r);
   });
-});
-
-describe('attempt transitions, loss, restart and scoring', () => {
-  test('ready board rejects presses and unsupported cells are ignored', () => {
-    const ready = createRound(demo(1), 'demo');
-    expect(gameReducer(ready, { type: 'press', cell: 1 })).toBe(ready);
-    const active = gameReducer(ready, { type: 'start' });
-    for (const cell of [-1, 25, 1.5, NaN]) expect(gameReducer(active, { type: 'press', cell })).toBe(active);
+  it('pins boards until explicit advancement; only the next live board uses a new round key', () => {
+    let r = gameReducer(createRun(DEMO_SOURCE), { type: 'start' }); const initial = r.puzzle;
+    expect(gameReducer(r, { type: 'next', key: 'new round' }).puzzle).toEqual(initial);
+    for (const index of solutionSteps(r)) { if (r.phase === 'bloom') break; r = gameReducer(gameReducer(r, { type: 'select', index }), { type: 'rotate' }); }
+    const next = gameReducer(r, { type: 'next', key: 'new round', round: '1222' });
+    expect(next.puzzle).toEqual(createPuzzle('new round', 1)); expect(next.remainingMs).toBe(r.remainingMs); expect(next.stage).toBe(1);
   });
-  test('same tile repeatedly reaches a real loss; terminal state is immutable', () => {
-    let round = gameReducer(createRound(demo(1), 'demo'), { type: 'start' });
-    for (let i = 0; i < round.puzzle.limit; i++) round = gameReducer(round, { type: 'press', cell: 0 });
-    expect(round.phase).toBe('lost'); expect(score(round)).toBe(0);
-    for (const action of [{ type: 'undo' }, { type: 'hint' }, { type: 'press', cell: 1 }] as const) expect(gameReducer(round, action)).toBe(round);
+  it('resets combo when a rotation connects a new flower but disconnects old ones; reconnects cannot farm points', () => {
+    const base = createRun(DEMO_SOURCE);
+    let checked = false;
+    outer: for (let index = 0; index < 36; index++) {
+      if (![7, 11, 13, 14].includes(base.tiles[index].solution)) continue;
+      let mask = base.tiles[index].solution;
+      for (let turn = 0; turn < 4; turn++, mask = rotateMask(mask)) {
+        const tiles = base.tiles.map((t, i) => ({ ...t, mask: i === index ? mask : t.solution }));
+        const beforeReach = base.puzzle.beacons.filter(i => independentReach(tiles.map(t => t.mask), base.puzzle.source).has(i));
+        const nextTiles = tiles.map((t, i) => ({ ...t, mask: i === index ? rotateMask(t.mask) : t.mask }));
+        const afterReach = base.puzzle.beacons.filter(i => independentReach(nextTiles.map(t => t.mask), base.puzzle.source).has(i));
+        const added = afterReach.filter(i => !beforeReach.includes(i));
+        if (!added.length || !beforeReach.some(i => !afterReach.includes(i)) || new Set([...beforeReach, ...afterReach]).size !== 4) continue;
+        let run = { ...base, tiles, phase: 'playing' as const, selected: index, awarded: beforeReach, streak: 1, combo: 1, score: beforeReach.length * 100 };
+        let next = gameReducer(run, { type: 'rotate' });
+        expect(next.combo).toBe(1); expect(next.streak).toBe(0); expect(next.score - run.score).toBe(added.length * 100);
+        const scoreBeforeReconnect = next.score;
+        for (let n = 0; n < 3 && next.phase === 'playing'; n++) next = gameReducer(next, { type: 'rotate' });
+        expect(next.phase).toBe('bloom');
+        expect(next.score - scoreBeforeReconnect).toBe(400 + 5 * (next.puzzle.limit - next.moves));
+        expect(new Set(next.awarded).size).toBe(4); checked = true; break outer;
+      }
+    }
+    expect(checked).toBe(true);
   });
-  test('a final allowed move that clears the board is a win', () => {
-    let round = gameReducer(createRound(demo(1), 'demo'), { type: 'start' });
-    round = { ...round, board: MASKS[12], history: Array(round.puzzle.limit - 1).fill(0) };
-    expect(gameReducer(round, { type: 'press', cell: 12 }).phase).toBe('won');
-  });
-  test('undo restores the board and move, with a persistent penalty', () => {
-    const active = gameReducer(createRound(demo(2), 'demo'), { type: 'start' });
-    const undone = gameReducer(gameReducer(active, { type: 'press', cell: 12 }), { type: 'undo' });
-    expect(undone.board).toBe(active.board); expect(undone.history).toEqual([]); expect(undone.undos).toBe(1); expect(score(undone)).toBe(950);
-  });
-  test('a hint reduces remaining optimal distance by exactly one; repeats charge once', () => {
-    const active = gameReducer(createRound(demo(3), 'demo'), { type: 'start' });
-    const hinted = gameReducer(active, { type: 'hint' });
-    expect(hinted.hints).toBe(1); expect(score(hinted)).toBe(900);
-    expect(gameReducer(hinted, { type: 'hint' })).toBe(hinted);
-    expect(popcount(solve(gameReducer(hinted, { type: 'press', cell: hinted.hintCell! }).board)!)).toBe(active.puzzle.par - 1);
-  });
-  test('restart retains the exact input and clears every attempt value', () => {
-    let round = gameReducer(createRound(STARTER_ARCHIVE, 'archive'), { type: 'start' });
-    round = gameReducer(round, { type: 'hint' }); round = gameReducer(round, { type: 'press', cell: 3 }); round = gameReducer(round, { type: 'undo' });
-    expect(gameReducer(round, { type: 'restart' })).toEqual(createRound(STARTER_ARCHIVE, 'archive'));
-  });
-  test('formula charges only moves above par plus hints and undos, with floor zero', () => {
-    const round = createRound(demo(1), 'demo');
-    expect(score({ ...round, history: Array(round.puzzle.par + 2).fill(0), hints: 1, undos: 1 })).toBe(770);
-    expect(score({ ...round, hints: 50 })).toBe(0);
+  it('keeps deterministic fixture stable', () => {
+    const p = createPuzzle(DEMO_SOURCE.key); expect({ key: p.key, par: p.par, limit: p.limit, masks: p.tiles.map(t => t.mask) }).toMatchSnapshot();
   });
 });
